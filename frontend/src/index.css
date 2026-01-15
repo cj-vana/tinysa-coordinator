@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+/* Base styles for the app */
+body {
+  @apply bg-gray-900 text-gray-100 min-h-screen;
+  margin: 0;
+}
+
+#root {
+  @apply min-h-screen;
+}
