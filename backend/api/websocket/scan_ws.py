@@ -67,10 +67,7 @@ async def scan_websocket(websocket: WebSocket) -> None:
                 message = json.loads(raw_data)
             except json.JSONDecodeError as e:
                 logger.warning(f"Received invalid JSON from client: {e}")
-                await send_message({
-                    "type": "error",
-                    "message": f"Invalid JSON: {e}"
-                })
+                await send_message({"type": "error", "message": f"Invalid JSON: {e}"})
                 continue
 
             # Handle different actions
@@ -85,10 +82,12 @@ async def scan_websocket(websocket: WebSocket) -> None:
                 missing = [f for f in required if f not in config_data]
                 if missing:
                     logger.warning(f"Start scan request missing fields: {missing}")
-                    await send_message({
-                        "type": "error",
-                        "message": f"Missing required fields: {', '.join(missing)}"
-                    })
+                    await send_message(
+                        {
+                            "type": "error",
+                            "message": f"Missing required fields: {', '.join(missing)}",
+                        }
+                    )
                     continue
 
                 # Create and validate scan config
@@ -101,17 +100,15 @@ async def scan_websocket(websocket: WebSocket) -> None:
                     config = ScanConfig.from_dict(config_data)
                 except ScanConfigError as e:
                     logger.warning(f"Invalid scan config: {e}")
-                    await send_message({
-                        "type": "error",
-                        "message": f"Invalid scan configuration: {e}"
-                    })
+                    await send_message(
+                        {"type": "error", "message": f"Invalid scan configuration: {e}"}
+                    )
                     continue
                 except (ValueError, TypeError, KeyError) as e:
                     logger.warning(f"Error parsing scan config: {e}")
-                    await send_message({
-                        "type": "error",
-                        "message": f"Invalid scan config values: {e}"
-                    })
+                    await send_message(
+                        {"type": "error", "message": f"Invalid scan config values: {e}"}
+                    )
                     continue
 
                 # Start the scan
@@ -122,20 +119,16 @@ async def scan_websocket(websocket: WebSocket) -> None:
 
             else:
                 logger.warning(f"Unknown WebSocket action received: {action}")
-                await send_message({
-                    "type": "error",
-                    "message": f"Unknown action: {action}"
-                })
+                await send_message({"type": "error", "message": f"Unknown action: {action}"})
 
     except Exception as e:
         logger.exception(f"WebSocket error: {e}")
         try:
-            await send_message({
-                "type": "error",
-                "message": f"Internal server error: {e}"
-            })
+            await send_message({"type": "error", "message": f"Internal server error: {e}"})
         except Exception as send_error:
-            logger.debug(f"Failed to send error message to client (may be disconnected): {send_error}")
+            logger.debug(
+                f"Failed to send error message to client (may be disconnected): {send_error}"
+            )
 
     finally:
         # Clean up on disconnect

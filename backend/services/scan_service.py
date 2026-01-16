@@ -11,12 +11,48 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
-from backend.core.tinysa import TinySA, TinySACommandError, TinySAConnectionError, get_tinysa
+from backend.core.tinysa import (
+    TinySA,
+    TinySACommandError,
+    TinySAConnectionError,
+    get_tinysa,
+)
 
 if TYPE_CHECKING:
     from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
+
+# TinySA Ultra hardware constraints
+MIN_FREQ_HZ = 100_000  # 100 kHz minimum frequency
+MAX_FREQ_HZ = 6_000_000_000  # 6 GHz maximum frequency
+MIN_POINTS = 10
+MAX_POINTS = 10000
+MIN_RBW_KHZ = 0.2  # 200 Hz minimum RBW
+MAX_RBW_KHZ = 850.0  # 850 kHz maximum RBW
+
+# Valid RBW values for TinySA Ultra (in kHz)
+# These are the discrete RBW settings supported by the hardware
+VALID_RBW_VALUES_KHZ = [
+    0.2,
+    0.5,
+    1.0,
+    2.0,
+    3.0,
+    5.0,
+    10.0,
+    30.0,
+    100.0,
+    300.0,
+    600.0,
+    850.0,
+]
+
+
+class ScanConfigError(ValueError):
+    """Raised when scan configuration is invalid."""
+
+    pass
 
 
 @dataclass
@@ -37,15 +73,83 @@ class ScanConfig:
             "rbw_khz": self.rbw_khz,
         }
 
+    def validate(self) -> list[str]:
+        """Validate scan configuration against hardware constraints.
+
+        Returns:
+            List of validation error messages (empty if valid)
+        """
+        errors: list[str] = []
+
+        # Validate frequency range
+        if self.start_freq_hz < MIN_FREQ_HZ:
+            errors.append(
+                f"start_freq_hz must be at least {MIN_FREQ_HZ} Hz ({MIN_FREQ_HZ / 1e3:.1f} kHz)"
+            )
+        if self.start_freq_hz > MAX_FREQ_HZ:
+            errors.append(
+                f"start_freq_hz must be at most {MAX_FREQ_HZ} Hz ({MAX_FREQ_HZ / 1e9:.1f} GHz)"
+            )
+        if self.stop_freq_hz < MIN_FREQ_HZ:
+            errors.append(
+                f"stop_freq_hz must be at least {MIN_FREQ_HZ} Hz ({MIN_FREQ_HZ / 1e3:.1f} kHz)"
+            )
+        if self.stop_freq_hz > MAX_FREQ_HZ:
+            errors.append(
+                f"stop_freq_hz must be at most {MAX_FREQ_HZ} Hz ({MAX_FREQ_HZ / 1e9:.1f} GHz)"
+            )
+        if self.start_freq_hz >= self.stop_freq_hz:
+            errors.append("start_freq_hz must be less than stop_freq_hz")
+
+        # Validate points
+        if self.points < MIN_POINTS:
+            errors.append(f"points must be at least {MIN_POINTS}")
+        if self.points > MAX_POINTS:
+            errors.append(f"points must be at most {MAX_POINTS}")
+
+        # Validate RBW if specified
+        if self.rbw_khz is not None:
+            if self.rbw_khz < MIN_RBW_KHZ:
+                errors.append(
+                    f"rbw_khz must be at least {MIN_RBW_KHZ} kHz ({MIN_RBW_KHZ * 1000:.0f} Hz)"
+                )
+            if self.rbw_khz > MAX_RBW_KHZ:
+                errors.append(f"rbw_khz must be at most {MAX_RBW_KHZ} kHz")
+
+            # Check if RBW is close to a valid value (within 10% tolerance)
+            # This allows for slight variations in user input
+            if not any(abs(self.rbw_khz - valid) / valid < 0.1 for valid in VALID_RBW_VALUES_KHZ):
+                valid_str = ", ".join(str(v) for v in VALID_RBW_VALUES_KHZ)
+                errors.append(f"rbw_khz should be one of the valid values: {valid_str} kHz")
+
+        return errors
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ScanConfig":
-        """Create config from dictionary."""
-        return cls(
+        """Create config from dictionary.
+
+        Args:
+            data: Dictionary with scan configuration
+
+        Returns:
+            ScanConfig instance
+
+        Raises:
+            ScanConfigError: If configuration is invalid
+        """
+        config = cls(
             start_freq_hz=int(data["start_freq_hz"]),
             stop_freq_hz=int(data["stop_freq_hz"]),
             points=int(data.get("points", 450)),
             rbw_khz=data.get("rbw_khz"),
         )
+
+        # Validate the config
+        errors = config.validate()
+        if errors:
+            raise ScanConfigError("; ".join(errors))
+
+        return config
 
 
 class ScanSession:
@@ -86,16 +190,13 @@ class ScanSession:
             config: Scan configuration parameters
         """
         logger.info(
-            f"Starting scan: range={config.start_freq_hz/1e6:.3f}-{config.stop_freq_hz/1e6:.3f} MHz, "
+            f"Starting scan: range={config.start_freq_hz / 1e6:.3f}-{config.stop_freq_hz / 1e6:.3f} MHz, "
             f"points={config.points}, rbw={config.rbw_khz} kHz"
         )
 
         if self._scanning:
             logger.warning("Cannot start scan: scan already in progress")
-            await self._send({
-                "type": "error",
-                "message": "Scan already in progress"
-            })
+            await self._send({"type": "error", "message": "Scan already in progress"})
             return
 
         self._scanning = True
@@ -105,10 +206,7 @@ class ScanSession:
             # Check device connection
             if not self._tinysa.is_connected:
                 logger.error("Cannot start scan: TinySA device not connected")
-                await self._send({
-                    "type": "error",
-                    "message": "TinySA device not connected"
-                })
+                await self._send({"type": "error", "message": "TinySA device not connected"})
                 return
 
             # Set RBW if specified
@@ -118,18 +216,12 @@ class ScanSession:
                     await self._tinysa.set_rbw(config.rbw_khz)
                 except (TinySAConnectionError, TinySACommandError) as e:
                     logger.error(f"Failed to set RBW: {e}")
-                    await self._send({
-                        "type": "error",
-                        "message": f"Failed to set RBW: {e}"
-                    })
+                    await self._send({"type": "error", "message": f"Failed to set RBW: {e}"})
                     return
 
             logger.debug("Scan started, streaming data points")
             # Notify client that scan is starting
-            await self._send({
-                "type": "scan_started",
-                "config": config.to_dict()
-            })
+            await self._send({"type": "scan_started", "config": config.to_dict()})
 
             # Run the scan and stream points
             point_count = 0
@@ -146,27 +238,23 @@ class ScanSession:
                         return
 
                     # Send the data point
-                    await self._send({
-                        "type": "scan_point",
-                        "index": point_count,
-                        "frequency_hz": freq_hz,
-                        "amplitude_dbm": round(amplitude_dbm, 2),
-                    })
+                    await self._send(
+                        {
+                            "type": "scan_point",
+                            "index": point_count,
+                            "frequency_hz": freq_hz,
+                            "amplitude_dbm": round(amplitude_dbm, 2),
+                        }
+                    )
                     point_count += 1
 
                 # Scan completed successfully
-                await self._send({
-                    "type": "scan_completed",
-                    "total_points": point_count
-                })
+                await self._send({"type": "scan_completed", "total_points": point_count})
                 logger.info(f"Scan completed: {point_count} points")
 
             except (TinySAConnectionError, TinySACommandError) as e:
                 logger.error(f"Scan error: {e}")
-                await self._send({
-                    "type": "error",
-                    "message": f"Scan failed: {e}"
-                })
+                await self._send({"type": "error", "message": f"Scan failed: {e}"})
 
         finally:
             self._scanning = False
@@ -178,10 +266,7 @@ class ScanSession:
             self._cancel_requested = True
             logger.info("Scan stop requested")
         else:
-            await self._send({
-                "type": "error",
-                "message": "No scan in progress"
-            })
+            await self._send({"type": "error", "message": "No scan in progress"})
 
 
 class ScanService:
