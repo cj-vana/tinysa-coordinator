@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
 import ScanPage from './pages/ScanPage'
 import HistoryPage from './pages/HistoryPage'
 import SettingsPage from './pages/SettingsPage'
@@ -45,11 +46,13 @@ function App() {
         <div className="min-h-screen bg-gray-900 text-gray-100">
           <Navigation />
           <main className="container mx-auto">
-            <Routes>
-              <Route path="/" element={<ScanPage />} />
-              <Route path="/history" element={<HistoryPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Routes>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<ScanPage />} />
+                <Route path="/history" element={<HistoryPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Routes>
+            </ErrorBoundary>
           </main>
         </div>
       </BrowserRouter>
