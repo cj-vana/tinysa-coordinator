@@ -10,13 +10,14 @@ Endpoints:
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from backend.core.exceptions import ExportDataError, ExportFormatError, ScanNotFoundError
+from backend.core.rate_limit import get_limiter, get_rate_limit_config
 from backend.db.database import get_async_session
 from backend.db.models import SavedScan
 from backend.services.export_service import (
@@ -28,14 +29,15 @@ from backend.services.export_service import (
     get_export_filename,
 )
 
+limiter = get_limiter()
+rate_config = get_rate_limit_config()
+
 router = APIRouter(prefix="/export", tags=["export"])
 
 ExportFormat = Literal["wwb", "wsm", "raw", "json"]
 
 
-async def get_scan_with_data(
-    scan_id: int, session: AsyncSession
-) -> SavedScan:
+async def get_scan_with_data(scan_id: int, session: AsyncSession) -> SavedScan:
     """
     Retrieve a scan with all its data points.
     Raises 404 if not found.
@@ -61,7 +63,9 @@ async def get_scan_with_data(
 
 
 @router.get("/{scan_id}/wwb")
+@limiter.limit(rate_config.export_limit)
 async def export_wwb(
+    request: Request,
     scan_id: int,
     session: AsyncSession = Depends(get_async_session),
 ) -> StreamingResponse:
@@ -88,7 +92,9 @@ async def export_wwb(
 
 
 @router.get("/{scan_id}/wsm")
+@limiter.limit(rate_config.export_limit)
 async def export_wsm(
+    request: Request,
     scan_id: int,
     session: AsyncSession = Depends(get_async_session),
 ) -> StreamingResponse:
@@ -115,7 +121,9 @@ async def export_wsm(
 
 
 @router.get("/{scan_id}/raw")
+@limiter.limit(rate_config.export_limit)
 async def export_raw(
+    request: Request,
     scan_id: int,
     session: AsyncSession = Depends(get_async_session),
 ) -> StreamingResponse:
@@ -142,7 +150,9 @@ async def export_raw(
 
 
 @router.get("/{scan_id}/json")
+@limiter.limit(rate_config.export_limit)
 async def export_json(
+    request: Request,
     scan_id: int,
     session: AsyncSession = Depends(get_async_session),
 ) -> StreamingResponse:
@@ -169,7 +179,9 @@ async def export_json(
 
 
 @router.get("/{scan_id}/{format}")
+@limiter.limit(rate_config.export_limit)
 async def export_generic(
+    request: Request,
     scan_id: int,
     format: ExportFormat,
     session: AsyncSession = Depends(get_async_session),
@@ -198,4 +210,4 @@ async def export_generic(
             supported_formats=["wwb", "wsm", "raw", "json"],
         )
 
-    return await handlers[format](scan_id, session)
+    return await handlers[format](request, scan_id, session)

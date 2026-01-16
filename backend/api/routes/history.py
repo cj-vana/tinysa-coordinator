@@ -4,12 +4,11 @@ API routes for scan history management.
 Provides endpoints for listing, viewing, creating, updating, and deleting saved scans.
 """
 
-from typing import Optional
-
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.exceptions import ScanNotFoundError
+from backend.core.rate_limit import get_limiter, get_rate_limit_config
 from backend.db.database import get_async_session
 from backend.schemas.scan import (
     SavedScanCreate,
@@ -22,14 +21,19 @@ from backend.schemas.scan import (
 )
 from backend.services import history_service
 
+limiter = get_limiter()
+rate_config = get_rate_limit_config()
+
 router = APIRouter(prefix="/api/history", tags=["history"])
 
 
 @router.get("/", response_model=SavedScanList)
+@limiter.limit(rate_config.history_limit)
 async def list_scans(
+    request: Request,
     limit: int = Query(default=20, ge=1, le=100, description="Number of scans to return"),
     offset: int = Query(default=0, ge=0, description="Number of scans to skip"),
-    search: Optional[str] = Query(
+    search: str | None = Query(
         default=None, min_length=1, max_length=100, description="Search name or location"
     ),
     session: AsyncSession = Depends(get_async_session),
@@ -72,7 +76,9 @@ async def list_scans(
 
 
 @router.get("/{scan_id}", response_model=SavedScanDetail)
+@limiter.limit(rate_config.history_limit)
 async def get_scan(
+    request: Request,
     scan_id: int,
     session: AsyncSession = Depends(get_async_session),
 ) -> SavedScanDetail:
@@ -123,7 +129,9 @@ async def get_scan(
 
 
 @router.post("/", response_model=SavedScanDetail, status_code=201)
+@limiter.limit(rate_config.history_limit)
 async def create_scan(
+    request: Request,
     scan_data: SavedScanCreate,
     session: AsyncSession = Depends(get_async_session),
 ) -> SavedScanDetail:
@@ -170,7 +178,9 @@ async def create_scan(
 
 
 @router.put("/{scan_id}", response_model=SavedScanResponse)
+@limiter.limit(rate_config.history_limit)
 async def update_scan(
+    request: Request,
     scan_id: int,
     update_data: SavedScanUpdate,
     session: AsyncSession = Depends(get_async_session),
@@ -200,7 +210,9 @@ async def update_scan(
 
 
 @router.delete("/{scan_id}", status_code=204)
+@limiter.limit(rate_config.history_limit)
 async def delete_scan(
+    request: Request,
     scan_id: int,
     session: AsyncSession = Depends(get_async_session),
 ) -> None:

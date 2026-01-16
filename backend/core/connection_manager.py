@@ -1,7 +1,8 @@
 """WebSocket connection manager for real-time scan streaming.
 
 Manages active WebSocket connections and provides methods for
-broadcasting messages to connected clients.
+broadcasting messages to connected clients. Includes connection
+limits to prevent resource exhaustion.
 """
 
 from __future__ import annotations
@@ -13,7 +14,18 @@ from typing import Any
 from fastapi import WebSocket
 from starlette.websockets import WebSocketState
 
+from backend.core.rate_limit import get_rate_limit_config
+
 logger = logging.getLogger(__name__)
+
+
+class WebSocketConnectionLimitExceeded(Exception):
+    """Raised when the WebSocket connection limit is exceeded."""
+
+    def __init__(self, current_count: int, max_connections: int) -> None:
+        self.current_count = current_count
+        self.max_connections = max_connections
+        super().__init__(f"WebSocket connection limit exceeded: {current_count}/{max_connections}")
 
 
 class ConnectionManager:
@@ -21,11 +33,26 @@ class ConnectionManager:
 
     Tracks active connections and provides methods for sending messages
     to individual clients or broadcasting to all connected clients.
+    Enforces connection limits to prevent resource exhaustion.
     """
 
-    def __init__(self) -> None:
-        """Initialize the connection manager."""
+    def __init__(self, max_connections: int | None = None) -> None:
+        """Initialize the connection manager.
+
+        Args:
+            max_connections: Maximum allowed concurrent connections.
+                             If None, uses the value from rate limit config.
+        """
         self._active_connections: list[WebSocket] = []
+        self._max_connections = max_connections
+
+    @property
+    def max_connections(self) -> int:
+        """Get the maximum allowed concurrent connections."""
+        if self._max_connections is not None:
+            return self._max_connections
+        config = get_rate_limit_config()
+        return config.websocket_max_connections
 
     @property
     def active_connections(self) -> list[WebSocket]:
@@ -37,15 +64,39 @@ class ConnectionManager:
         """Get number of active connections."""
         return len(self._active_connections)
 
+    def can_accept_connection(self) -> bool:
+        """Check if a new connection can be accepted.
+
+        Returns:
+            True if the connection count is below the limit, False otherwise.
+        """
+        return self.connection_count < self.max_connections
+
     async def connect(self, websocket: WebSocket) -> None:
         """Accept and register a new WebSocket connection.
 
         Args:
             websocket: The WebSocket connection to accept
+
+        Raises:
+            WebSocketConnectionLimitExceeded: If the connection limit is reached
         """
+        if not self.can_accept_connection():
+            logger.warning(
+                f"WebSocket connection rejected: limit exceeded "
+                f"({self.connection_count}/{self.max_connections})"
+            )
+            raise WebSocketConnectionLimitExceeded(
+                current_count=self.connection_count,
+                max_connections=self.max_connections,
+            )
+
         await websocket.accept()
         self._active_connections.append(websocket)
-        logger.info(f"WebSocket connected. Active connections: {self.connection_count}")
+        logger.info(
+            f"WebSocket connected. Active connections: "
+            f"{self.connection_count}/{self.max_connections}"
+        )
 
     def disconnect(self, websocket: WebSocket) -> None:
         """Remove a WebSocket connection from the manager.
@@ -114,7 +165,9 @@ class ConnectionManager:
             logger.info("No active WebSocket connections to close")
             return
 
-        logger.info(f"Initiating graceful shutdown for {self.connection_count} WebSocket connections")
+        logger.info(
+            f"Initiating graceful shutdown for {self.connection_count} WebSocket connections"
+        )
 
         # Send shutdown notification to all clients
         shutdown_message = {
@@ -140,7 +193,7 @@ class ConnectionManager:
         try:
             await asyncio.wait_for(
                 asyncio.gather(*close_tasks, return_exceptions=True),
-                timeout=5.0  # 5 second timeout for graceful shutdown
+                timeout=5.0,  # 5 second timeout for graceful shutdown
             )
         except TimeoutError:
             logger.warning("Graceful shutdown timed out, forcing connection closure")

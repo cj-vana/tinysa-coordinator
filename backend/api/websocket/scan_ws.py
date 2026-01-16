@@ -12,7 +12,10 @@ from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
 
-from backend.core.connection_manager import get_connection_manager
+from backend.core.connection_manager import (
+    WebSocketConnectionLimitExceeded,
+    get_connection_manager,
+)
 from backend.services.scan_service import ScanConfig, ScanConfigError, get_scan_service
 
 logger = logging.getLogger(__name__)
@@ -42,9 +45,30 @@ async def scan_websocket(websocket: WebSocket) -> None:
     scan_service = get_scan_service()
 
     client_host = websocket.client.host if websocket.client else "unknown"
-    logger.info(f"WebSocket connection established from {client_host}")
+    logger.info(f"WebSocket connection attempt from {client_host}")
 
-    await connection_manager.connect(websocket)
+    # Try to connect with connection limit enforcement
+    try:
+        await connection_manager.connect(websocket)
+    except WebSocketConnectionLimitExceeded as e:
+        logger.warning(
+            f"WebSocket connection rejected from {client_host}: "
+            f"connection limit exceeded ({e.current_count}/{e.max_connections})"
+        )
+        # Accept the connection briefly to send the error message, then close
+        await websocket.accept()
+        await websocket.send_json(
+            {
+                "type": "error",
+                "code": "connection_limit_exceeded",
+                "message": f"Server connection limit reached ({e.max_connections} max). "
+                "Please try again later.",
+                "current_connections": e.current_count,
+                "max_connections": e.max_connections,
+            }
+        )
+        await websocket.close(code=1013, reason="Connection limit exceeded")
+        return
 
     async def send_message(data: dict[str, Any]) -> None:
         """Send a JSON message to the WebSocket client."""

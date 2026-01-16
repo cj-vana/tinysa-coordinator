@@ -4,10 +4,11 @@ API routes for frequency preset management.
 Provides CRUD operations for frequency presets with protection for built-in presets.
 """
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.exceptions import BuiltinPresetModificationError, PresetNotFoundError
+from backend.core.rate_limit import get_limiter, get_rate_limit_config
 from backend.db.database import get_async_session
 from backend.schemas.preset import (
     FrequencyPresetCreate,
@@ -15,6 +16,9 @@ from backend.schemas.preset import (
     FrequencyPresetUpdate,
 )
 from backend.services.preset_service import PresetService
+
+limiter = get_limiter()
+rate_config = get_rate_limit_config()
 
 router = APIRouter(prefix="/api/presets", tags=["presets"])
 
@@ -27,7 +31,9 @@ async def get_preset_service(
 
 
 @router.get("/", response_model=list[FrequencyPresetResponse])
+@limiter.limit(rate_config.preset_limit)
 async def list_presets(
+    request: Request,
     service: PresetService = Depends(get_preset_service),
 ) -> list[FrequencyPresetResponse]:
     """
@@ -39,10 +45,10 @@ async def list_presets(
     return [FrequencyPresetResponse.model_validate(p) for p in presets]
 
 
-@router.post(
-    "/", response_model=FrequencyPresetResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=FrequencyPresetResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit(rate_config.preset_limit)
 async def create_preset(
+    request: Request,
     preset_data: FrequencyPresetCreate,
     service: PresetService = Depends(get_preset_service),
 ) -> FrequencyPresetResponse:
@@ -56,7 +62,9 @@ async def create_preset(
 
 
 @router.get("/{preset_id}", response_model=FrequencyPresetResponse)
+@limiter.limit(rate_config.preset_limit)
 async def get_preset(
+    request: Request,
     preset_id: int,
     service: PresetService = Depends(get_preset_service),
 ) -> FrequencyPresetResponse:
@@ -72,7 +80,9 @@ async def get_preset(
 
 
 @router.put("/{preset_id}", response_model=FrequencyPresetResponse)
+@limiter.limit(rate_config.preset_limit)
 async def update_preset(
+    request: Request,
     preset_id: int,
     preset_data: FrequencyPresetUpdate,
     service: PresetService = Depends(get_preset_service),
@@ -97,7 +107,9 @@ async def update_preset(
 
 
 @router.delete("/{preset_id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit(rate_config.preset_limit)
 async def delete_preset(
+    request: Request,
     preset_id: int,
     service: PresetService = Depends(get_preset_service),
 ) -> None:
