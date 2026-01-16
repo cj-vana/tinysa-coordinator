@@ -55,7 +55,9 @@ class DeviceService:
             List of port information dictionaries with an additional 'is_tinysa'
             field indicating if the port is likely a TinySA device.
         """
+        logger.debug("Listing available serial ports")
         ports = TinySA.list_ports()
+        logger.debug(f"Found {len(ports)} serial ports")
 
         # Add TinySA detection heuristics
         for port in ports:
@@ -80,7 +82,11 @@ class DeviceService:
                 is_tinysa = True
 
             port["is_tinysa"] = is_tinysa
+            if is_tinysa:
+                logger.debug(f"Detected potential TinySA device on {port.get('port')}")
 
+        tinysa_count = sum(1 for p in ports if p.get("is_tinysa"))
+        logger.info(f"Found {tinysa_count} potential TinySA device(s) out of {len(ports)} ports")
         return ports
 
     def get_status(self) -> DeviceState:
@@ -89,6 +95,7 @@ class DeviceService:
         Returns:
             DeviceState object with current connection information.
         """
+        logger.debug(f"Getting device status, connected={self._tinysa.is_connected}")
         if self._tinysa.is_connected:
             return DeviceState(
                 connected=True,
@@ -120,6 +127,7 @@ class DeviceService:
         Raises:
             TinySAConnectionError: If connection fails.
         """
+        logger.info(f"Attempting to connect to TinySA device on port {port}")
         try:
             # Connect and get device info
             device_info = await self._tinysa.connect(port)
@@ -134,13 +142,16 @@ class DeviceService:
                 error=None,
             )
 
-            logger.info(f"Successfully connected to TinySA on {port}")
+            logger.info(
+                f"Successfully connected to TinySA on {port}: "
+                f"version={device_info.get('version')}, type={device_info.get('device_type')}"
+            )
             return device_info
 
         except TinySAConnectionError as e:
             # Store the error for status queries
             self._cached_state = DeviceState(error=str(e))
-            logger.error(f"Failed to connect to TinySA on {port}: {e}")
+            logger.warning(f"Failed to connect to TinySA on {port}: {e}")
             raise
 
         except Exception as e:

@@ -85,7 +85,13 @@ class ScanSession:
         Args:
             config: Scan configuration parameters
         """
+        logger.info(
+            f"Starting scan: range={config.start_freq_hz/1e6:.3f}-{config.stop_freq_hz/1e6:.3f} MHz, "
+            f"points={config.points}, rbw={config.rbw_khz} kHz"
+        )
+
         if self._scanning:
+            logger.warning("Cannot start scan: scan already in progress")
             await self._send({
                 "type": "error",
                 "message": "Scan already in progress"
@@ -98,6 +104,7 @@ class ScanSession:
         try:
             # Check device connection
             if not self._tinysa.is_connected:
+                logger.error("Cannot start scan: TinySA device not connected")
                 await self._send({
                     "type": "error",
                     "message": "TinySA device not connected"
@@ -106,6 +113,7 @@ class ScanSession:
 
             # Set RBW if specified
             if config.rbw_khz is not None:
+                logger.debug(f"Setting RBW to {config.rbw_khz} kHz")
                 try:
                     await self._tinysa.set_rbw(config.rbw_khz)
                 except (TinySAConnectionError, TinySACommandError) as e:
@@ -116,6 +124,7 @@ class ScanSession:
                     })
                     return
 
+            logger.debug("Scan started, streaming data points")
             # Notify client that scan is starting
             await self._send({
                 "type": "scan_started",
@@ -202,6 +211,7 @@ class ScanService:
         """
         if websocket not in self._sessions:
             self._sessions[websocket] = ScanSession(websocket, send_callback)
+            logger.debug(f"Created new scan session, total active sessions: {len(self._sessions)}")
         return self._sessions[websocket]
 
     def remove_session(self, websocket: "WebSocket") -> None:
@@ -215,7 +225,8 @@ class ScanService:
             # Request stop if scan is in progress
             if session.is_scanning:
                 session._cancel_requested = True
-            logger.info("Scan session removed")
+                logger.info("Cancelling in-progress scan due to session removal")
+            logger.debug(f"Scan session removed, remaining active sessions: {len(self._sessions)}")
 
     @property
     def active_session_count(self) -> int:

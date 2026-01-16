@@ -4,6 +4,7 @@ Service layer for FrequencyPreset CRUD operations.
 Uses async SQLAlchemy for database operations.
 """
 
+import logging
 from typing import Optional
 
 from sqlalchemy import select
@@ -11,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db.models import FrequencyPreset
 from backend.schemas.preset import FrequencyPresetCreate, FrequencyPresetUpdate
+
+logger = logging.getLogger(__name__)
 
 
 class PresetService:
@@ -26,12 +29,15 @@ class PresetService:
         Returns:
             List of all presets sorted alphabetically within each category.
         """
+        logger.debug("Fetching all presets")
         result = await self.session.execute(
             select(FrequencyPreset).order_by(
                 FrequencyPreset.category, FrequencyPreset.name
             )
         )
-        return list(result.scalars().all())
+        presets = list(result.scalars().all())
+        logger.debug(f"Retrieved {len(presets)} presets")
+        return presets
 
     async def get_by_id(self, preset_id: int) -> Optional[FrequencyPreset]:
         """
@@ -43,10 +49,16 @@ class PresetService:
         Returns:
             The preset if found, None otherwise.
         """
+        logger.debug(f"Fetching preset by id={preset_id}")
         result = await self.session.execute(
             select(FrequencyPreset).where(FrequencyPreset.id == preset_id)
         )
-        return result.scalar_one_or_none()
+        preset = result.scalar_one_or_none()
+        if preset:
+            logger.debug(f"Found preset: name={preset.name}")
+        else:
+            logger.debug(f"Preset not found: id={preset_id}")
+        return preset
 
     async def create(self, preset_data: FrequencyPresetCreate) -> FrequencyPreset:
         """
@@ -58,6 +70,10 @@ class PresetService:
         Returns:
             The newly created preset.
         """
+        logger.info(
+            f"Creating preset: name={preset_data.name}, category={preset_data.category.value}, "
+            f"range={preset_data.start_freq_hz}-{preset_data.stop_freq_hz} Hz"
+        )
         preset = FrequencyPreset(
             name=preset_data.name,
             description=preset_data.description,
@@ -71,6 +87,7 @@ class PresetService:
         self.session.add(preset)
         await self.session.flush()
         await self.session.refresh(preset)
+        logger.info(f"Created preset: id={preset.id}, name={preset.name}")
         return preset
 
     async def update(
@@ -89,11 +106,14 @@ class PresetService:
         Note:
             Built-in presets cannot be updated (checked at route level).
         """
+        logger.debug(f"Updating preset: id={preset_id}")
         preset = await self.get_by_id(preset_id)
         if not preset:
+            logger.warning(f"Cannot update preset: id={preset_id} not found")
             return None
 
         update_data = preset_data.model_dump(exclude_unset=True)
+        updated_fields = list(update_data.keys())
         for field, value in update_data.items():
             if field == "category" and value is not None:
                 setattr(preset, field, value.value)
@@ -102,6 +122,7 @@ class PresetService:
 
         await self.session.flush()
         await self.session.refresh(preset)
+        logger.info(f"Updated preset: id={preset_id}, fields={updated_fields}")
         return preset
 
     async def delete(self, preset_id: int) -> bool:
@@ -117,12 +138,16 @@ class PresetService:
         Note:
             Built-in presets cannot be deleted (checked at route level).
         """
+        logger.debug(f"Deleting preset: id={preset_id}")
         preset = await self.get_by_id(preset_id)
         if not preset:
+            logger.warning(f"Cannot delete preset: id={preset_id} not found")
             return False
 
+        preset_name = preset.name
         await self.session.delete(preset)
         await self.session.flush()
+        logger.info(f"Deleted preset: id={preset_id}, name={preset_name}")
         return True
 
     async def get_by_category(self, category: str) -> list[FrequencyPreset]:
@@ -135,12 +160,15 @@ class PresetService:
         Returns:
             List of presets in the specified category.
         """
+        logger.debug(f"Fetching presets by category={category}")
         result = await self.session.execute(
             select(FrequencyPreset)
             .where(FrequencyPreset.category == category)
             .order_by(FrequencyPreset.name)
         )
-        return list(result.scalars().all())
+        presets = list(result.scalars().all())
+        logger.debug(f"Found {len(presets)} presets in category={category}")
+        return presets
 
     async def count(self) -> int:
         """
@@ -154,4 +182,6 @@ class PresetService:
         result = await self.session.execute(
             select(func.count()).select_from(FrequencyPreset)
         )
-        return result.scalar() or 0
+        count = result.scalar() or 0
+        logger.debug(f"Total preset count: {count}")
+        return count

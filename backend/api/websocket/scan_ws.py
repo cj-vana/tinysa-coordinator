@@ -41,6 +41,9 @@ async def scan_websocket(websocket: WebSocket) -> None:
     connection_manager = get_connection_manager()
     scan_service = get_scan_service()
 
+    client_host = websocket.client.host if websocket.client else "unknown"
+    logger.info(f"WebSocket connection established from {client_host}")
+
     await connection_manager.connect(websocket)
 
     async def send_message(data: dict[str, Any]) -> None:
@@ -63,6 +66,7 @@ async def scan_websocket(websocket: WebSocket) -> None:
             try:
                 message = json.loads(raw_data)
             except json.JSONDecodeError as e:
+                logger.warning(f"Received invalid JSON from client: {e}")
                 await send_message({
                     "type": "error",
                     "message": f"Invalid JSON: {e}"
@@ -71,6 +75,7 @@ async def scan_websocket(websocket: WebSocket) -> None:
 
             # Handle different actions
             action = message.get("action")
+            logger.debug(f"Received WebSocket action: {action}")
 
             if action == "start_scan":
                 config_data = message.get("config", {})
@@ -79,6 +84,7 @@ async def scan_websocket(websocket: WebSocket) -> None:
                 required = ["start_freq_hz", "stop_freq_hz"]
                 missing = [f for f in required if f not in config_data]
                 if missing:
+                    logger.warning(f"Start scan request missing fields: {missing}")
                     await send_message({
                         "type": "error",
                         "message": f"Missing required fields: {', '.join(missing)}"
@@ -125,6 +131,7 @@ async def scan_websocket(websocket: WebSocket) -> None:
                 await session.stop_scan()
 
             else:
+                logger.warning(f"Unknown WebSocket action received: {action}")
                 await send_message({
                     "type": "error",
                     "message": f"Unknown action: {action}"
@@ -142,5 +149,7 @@ async def scan_websocket(websocket: WebSocket) -> None:
 
     finally:
         # Clean up on disconnect
+        logger.debug(f"Cleaning up WebSocket connection from {client_host}")
         scan_service.remove_session(websocket)
         connection_manager.disconnect(websocket)
+        logger.info(f"WebSocket connection closed for {client_host}")

@@ -4,6 +4,7 @@ Service layer for scan history operations.
 Provides async database operations for managing saved scans.
 """
 
+import logging
 from typing import Optional
 
 from sqlalchemy import func, or_, select
@@ -12,6 +13,8 @@ from sqlalchemy.orm import selectinload
 
 from backend.db.models import SavedScan, ScanDataPoint
 from backend.schemas.scan import SavedScanCreate, SavedScanUpdate
+
+logger = logging.getLogger(__name__)
 
 
 async def list_scans(
@@ -32,6 +35,8 @@ async def list_scans(
     Returns:
         Tuple of (list of scans, total count)
     """
+    logger.debug(f"Listing scans: limit={limit}, offset={offset}, search={search}")
+
     # Build base query
     query = select(SavedScan)
 
@@ -44,6 +49,7 @@ async def list_scans(
                 SavedScan.location.ilike(search_pattern),
             )
         )
+        logger.debug(f"Applied search filter: {search}")
 
     # Count total matching records
     count_query = select(func.count()).select_from(query.subquery())
@@ -57,6 +63,7 @@ async def list_scans(
     result = await session.execute(query)
     scans = list(result.scalars().all())
 
+    logger.debug(f"Retrieved {len(scans)} scans (total matching: {total})")
     return scans, total
 
 
@@ -76,13 +83,22 @@ async def get_scan_by_id(
     Returns:
         The scan if found, None otherwise
     """
+    logger.debug(f"Fetching scan: id={scan_id}, include_data_points={include_data_points}")
+
     query = select(SavedScan).where(SavedScan.id == scan_id)
 
     if include_data_points:
         query = query.options(selectinload(SavedScan.data_points))
 
     result = await session.execute(query)
-    return result.scalar_one_or_none()
+    scan = result.scalar_one_or_none()
+
+    if scan:
+        logger.debug(f"Found scan: id={scan_id}, name={scan.name}")
+    else:
+        logger.debug(f"Scan not found: id={scan_id}")
+
+    return scan
 
 
 async def get_scan_data_point_count(
@@ -101,7 +117,9 @@ async def get_scan_data_point_count(
     """
     query = select(func.count()).where(ScanDataPoint.scan_id == scan_id)
     result = await session.execute(query)
-    return result.scalar() or 0
+    count = result.scalar() or 0
+    logger.debug(f"Scan {scan_id} has {count} data points")
+    return count
 
 
 async def create_scan(
@@ -118,6 +136,12 @@ async def create_scan(
     Returns:
         The created scan
     """
+    logger.info(
+        f"Creating scan: name={scan_data.name}, "
+        f"range={scan_data.start_freq_hz}-{scan_data.stop_freq_hz} Hz, "
+        f"points={len(scan_data.data_points)}"
+    )
+
     # Create the scan record
     scan = SavedScan(
         name=scan_data.name,
@@ -137,6 +161,8 @@ async def create_scan(
     session.add(scan)
     await session.flush()  # Get the scan ID
 
+    logger.debug(f"Created scan record: id={scan.id}")
+
     # Create data points
     for dp in scan_data.data_points:
         data_point = ScanDataPoint(
@@ -148,6 +174,8 @@ async def create_scan(
         session.add(data_point)
 
     await session.flush()
+
+    logger.info(f"Saved scan: id={scan.id}, name={scan.name}, data_points={len(scan_data.data_points)}")
 
     # Reload with data points
     return await get_scan_by_id(session, scan.id, include_data_points=True)
@@ -169,17 +197,22 @@ async def update_scan(
     Returns:
         The updated scan if found, None otherwise
     """
+    logger.debug(f"Updating scan: id={scan_id}")
+
     scan = await get_scan_by_id(session, scan_id, include_data_points=False)
     if not scan:
+        logger.warning(f"Cannot update scan: id={scan_id} not found")
         return None
 
     # Update only provided fields
     update_dict = update_data.model_dump(exclude_unset=True)
+    updated_fields = list(update_dict.keys())
     for field, value in update_dict.items():
         setattr(scan, field, value)
 
     await session.flush()
 
+    logger.info(f"Updated scan: id={scan_id}, fields={updated_fields}")
     return scan
 
 
@@ -197,11 +230,16 @@ async def delete_scan(
     Returns:
         True if deleted, False if not found
     """
+    logger.debug(f"Deleting scan: id={scan_id}")
+
     scan = await get_scan_by_id(session, scan_id, include_data_points=False)
     if not scan:
+        logger.warning(f"Cannot delete scan: id={scan_id} not found")
         return False
 
+    scan_name = scan.name
     await session.delete(scan)
     await session.flush()
 
+    logger.info(f"Deleted scan: id={scan_id}, name={scan_name}")
     return True

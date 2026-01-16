@@ -9,11 +9,14 @@ Supports:
 """
 
 import json
+import logging
 from datetime import datetime
 from io import StringIO
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 
-from backend.db.models import SavedScan, ScanDataPoint
+from backend.db.models import SavedScan
+
+logger = logging.getLogger(__name__)
 
 
 def format_wwb_csv(scan: SavedScan) -> str:
@@ -30,13 +33,19 @@ def format_wwb_csv(scan: SavedScan) -> str:
         470.100000,-42.1
         470.150000,-45.3
     """
+    logger.debug(f"Formatting scan {scan.id} as WWB CSV")
     output = StringIO()
 
     for point in scan.data_points:
         freq_mhz = point.frequency_hz / 1_000_000
         output.write(f"{freq_mhz:.6f},{point.amplitude_dbm:.1f}\n")
 
-    return output.getvalue()
+    result = output.getvalue()
+    logger.info(
+        f"Exported scan id={scan.id} to WWB format: "
+        f"{len(scan.data_points)} points, {len(result)} bytes"
+    )
+    return result
 
 
 def format_wsm_csv(scan: SavedScan) -> str:
@@ -54,6 +63,7 @@ def format_wsm_csv(scan: SavedScan) -> str:
         470.100;-42.1
         470.150;-45.3
     """
+    logger.debug(f"Formatting scan {scan.id} as WSM CSV")
     output = StringIO()
 
     # Header row
@@ -63,7 +73,12 @@ def format_wsm_csv(scan: SavedScan) -> str:
         freq_mhz = point.frequency_hz / 1_000_000
         output.write(f"{freq_mhz:.3f};{point.amplitude_dbm:.1f}\n")
 
-    return output.getvalue()
+    result = output.getvalue()
+    logger.info(
+        f"Exported scan id={scan.id} to WSM format: "
+        f"{len(scan.data_points)} points, {len(result)} bytes"
+    )
+    return result
 
 
 def format_raw_csv(scan: SavedScan) -> str:
@@ -86,6 +101,7 @@ def format_raw_csv(scan: SavedScan) -> str:
         0,470000000,470.000000,-42.1
         1,470500000,470.500000,-45.3
     """
+    logger.debug(f"Formatting scan {scan.id} as raw CSV with metadata")
     output = StringIO()
 
     # Metadata comments
@@ -129,7 +145,12 @@ def format_raw_csv(scan: SavedScan) -> str:
         freq_mhz = point.frequency_hz / 1_000_000
         output.write(f"{point.index},{point.frequency_hz},{freq_mhz:.6f},{point.amplitude_dbm:.1f}\n")
 
-    return output.getvalue()
+    result = output.getvalue()
+    logger.info(
+        f"Exported scan id={scan.id} to raw CSV format: "
+        f"{len(scan.data_points)} points, {len(result)} bytes"
+    )
+    return result
 
 
 def format_json_export(scan: SavedScan) -> str:
@@ -138,6 +159,7 @@ def format_json_export(scan: SavedScan) -> str:
 
     Returns a structured JSON document with all scan information.
     """
+    logger.debug(f"Formatting scan {scan.id} as JSON")
     data = {
         "scan": {
             "id": scan.id,
@@ -181,7 +203,12 @@ def format_json_export(scan: SavedScan) -> str:
         },
     }
 
-    return json.dumps(data, indent=2)
+    result = json.dumps(data, indent=2)
+    logger.info(
+        f"Exported scan id={scan.id} to JSON format: "
+        f"{len(scan.data_points)} points, {len(result)} bytes"
+    )
+    return result
 
 
 async def generate_wwb_stream(scan: SavedScan) -> AsyncGenerator[str, None]:
@@ -189,6 +216,7 @@ async def generate_wwb_stream(scan: SavedScan) -> AsyncGenerator[str, None]:
     Generate WWB CSV as a stream for large exports.
     Yields chunks of CSV data.
     """
+    logger.debug(f"Streaming scan {scan.id} as WWB CSV")
     for point in scan.data_points:
         freq_mhz = point.frequency_hz / 1_000_000
         yield f"{freq_mhz:.6f},{point.amplitude_dbm:.1f}\n"
@@ -199,6 +227,7 @@ async def generate_wsm_stream(scan: SavedScan) -> AsyncGenerator[str, None]:
     Generate WSM CSV as a stream for large exports.
     Yields chunks of CSV data.
     """
+    logger.debug(f"Streaming scan {scan.id} as WSM CSV")
     yield "Frequency MHz;Level dBm\n"
 
     for point in scan.data_points:
@@ -234,7 +263,9 @@ def get_export_filename(scan: SavedScan, format_type: str) -> str:
     }
 
     suffix = suffixes.get(format_type, ".csv")
-    return f"{safe_name}{suffix}"
+    filename = f"{safe_name}{suffix}"
+    logger.debug(f"Generated export filename: {filename}")
+    return filename
 
 
 def get_content_type(format_type: str) -> str:

@@ -91,6 +91,7 @@ class TinySA:
             - vid: USB Vendor ID (if available)
             - pid: USB Product ID (if available)
         """
+        logger.debug("Enumerating serial ports")
         ports = []
         for port_info in serial.tools.list_ports.comports():
             ports.append({
@@ -103,6 +104,7 @@ class TinySA:
                 "vid": port_info.vid,
                 "pid": port_info.pid,
             })
+        logger.debug(f"Found {len(ports)} serial ports")
         return ports
 
     async def connect(self, port: str) -> dict[str, Any]:
@@ -121,11 +123,14 @@ class TinySA:
         Raises:
             TinySAConnectionError: If connection fails or device doesn't respond
         """
+        logger.info(f"Attempting to connect to TinySA on port {port}")
         async with self._lock:
             if self._serial is not None and self._serial.is_open:
+                logger.debug("Closing existing serial connection before reconnect")
                 self._serial.close()
 
             try:
+                logger.debug(f"Opening serial port {port} at {BAUDRATE} baud")
                 self._serial = serial.Serial(
                     port=port,
                     baudrate=BAUDRATE,
@@ -157,6 +162,7 @@ class TinySA:
                 return device_info
 
             except serial.SerialException as e:
+                logger.error(f"Serial connection failed for {port}: {e}")
                 self._serial = None
                 self._port = None
                 raise TinySAConnectionError(f"Failed to connect to {port}: {e}") from e
@@ -187,10 +193,12 @@ class TinySA:
         async with self._lock:
             self._check_connected()
             if rbw_khz is None:
+                logger.debug("Setting RBW to auto")
                 await self._send_command_internal("rbw auto")
             else:
                 # TinySA expects RBW in Hz for the command
                 rbw_hz = int(rbw_khz * 1000)
+                logger.debug(f"Setting RBW to {rbw_khz} kHz ({rbw_hz} Hz)")
                 await self._send_command_internal(f"rbw {rbw_hz}")
 
     async def scan_raw(
@@ -217,13 +225,16 @@ class TinySA:
             TinySAConnectionError: If not connected
             TinySACommandError: If scan fails or returns invalid data
         """
+        logger.info(
+            f"Starting raw scan: {start_hz/1e6:.3f}-{stop_hz/1e6:.3f} MHz, {points} points"
+        )
         async with self._lock:
             self._check_connected()
 
             # Send scanraw command
             cmd = f"scanraw {start_hz} {stop_hz} {points}\r\n"
             self._serial.write(cmd.encode())
-            logger.debug(f"Sent command: {cmd.strip()}")
+            logger.debug(f"Sent scanraw command to device")
 
             # Read until we find the '{' marker that indicates binary data start
             buffer = b""
@@ -239,6 +250,7 @@ class TinySA:
                 else:
                     timeout_count += 1
                     if timeout_count > max_timeouts:
+                        logger.error("Timeout waiting for scan data from device")
                         raise TinySACommandError("Timeout waiting for scan data")
 
             # Find the start of binary data
@@ -279,6 +291,7 @@ class TinySA:
 
             # Read until we get the prompt back (to clear the buffer)
             await self._read_until_prompt()
+            logger.debug(f"Scan complete, yielded {points} data points")
 
     async def _send_command_internal(self, command: str) -> str:
         """Send a command and return the response (internal, no lock).
