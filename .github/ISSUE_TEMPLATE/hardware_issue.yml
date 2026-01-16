@@ -1,0 +1,143 @@
+name: Hardware/Device Issue
+description: Report issues with TinySA device connection or communication
+title: "[Hardware]: "
+labels: ["hardware", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a hardware-related issue! Please fill out the form below to help us diagnose the problem.
+
+  - type: checkboxes
+    id: existing-issues
+    attributes:
+      label: Existing Issues
+      description: Please confirm you've checked for existing issues
+      options:
+        - label: I have searched the existing issues and this problem has not been reported
+          required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      description: What type of hardware issue are you experiencing?
+      options:
+        - Device not detected
+        - Connection drops unexpectedly
+        - Communication errors
+        - Incorrect data from device
+        - Scan doesn't start/stop
+        - Slow or unresponsive communication
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: tinysa-model
+    attributes:
+      label: TinySA Model
+      description: What TinySA model are you using?
+      placeholder: e.g., TinySA Ultra, TinySA Basic
+    validations:
+      required: true
+
+  - type: input
+    id: firmware
+    attributes:
+      label: TinySA Firmware Version
+      description: What firmware version is your TinySA running?
+      placeholder: e.g., v1.4.xxx
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What OS are you running the backend on?
+      options:
+        - macOS
+        - Linux (Ubuntu/Debian)
+        - Linux (Other)
+        - Windows
+        - Docker on macOS
+        - Docker on Linux
+        - Docker on Windows
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: serial-port
+    attributes:
+      label: Serial Port
+      description: What serial port is the device connected to?
+      placeholder: e.g., /dev/cu.usbmodem4001, /dev/ttyACM0, COM3
+
+  - type: dropdown
+    id: connection-type
+    attributes:
+      label: Connection Type
+      description: How is the TinySA connected?
+      options:
+        - Direct USB connection
+        - USB hub
+        - USB extension cable
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem Description
+      description: Describe the issue in detail
+      placeholder: What happens when you try to connect/scan?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Connect TinySA via USB
+        2. Start the backend
+        3. Try to connect in the UI
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: troubleshooting
+    attributes:
+      label: Troubleshooting Already Tried
+      description: What have you already tried to fix the issue?
+      placeholder: |
+        - Unplugged and reconnected the device
+        - Tried a different USB port
+        - Restarted the backend
+        - etc.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Backend Logs
+      description: Please paste relevant backend logs (especially serial communication logs)
+      render: shell
+
+  - type: checkboxes
+    id: works-elsewhere
+    attributes:
+      label: Device Works Elsewhere
+      description: Does the TinySA work correctly with other software?
+      options:
+        - label: The device works correctly with the official TinySA software
+        - label: The device works correctly with other serial terminal software
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the hardware issue here

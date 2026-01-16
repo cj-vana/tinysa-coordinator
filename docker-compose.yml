@@ -1,0 +1,153 @@
+# =============================================================================
+# TinySA Coordinator - Docker Compose Configuration
+# =============================================================================
+# Full-stack deployment configuration for the TinySA Coordinator application.
+# This file orchestrates the containerized deployment with persistent storage
+# and environment configuration.
+#
+# Usage:
+#   docker compose up -d              # Start in detached mode
+#   docker compose up --build         # Rebuild and start
+#   docker compose down               # Stop and remove containers
+#   docker compose logs -f            # Follow logs
+#   docker compose ps                 # Show running containers
+#
+# For hardware access (TinySA device), add device mapping:
+#   docker compose --profile hardware up -d
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # TinySA Coordinator - Main Application Service
+  # ---------------------------------------------------------------------------
+  # Full-stack application serving the FastAPI backend and React frontend.
+  # The frontend is pre-built and served as static files by the backend.
+  # ---------------------------------------------------------------------------
+  tinysa-coordinator:
+    # Build from local Dockerfile (multi-stage: Node.js frontend + Python backend)
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # Container identification
+    container_name: tinysa-coordinator
+    hostname: tinysa-coordinator
+
+    # Port mapping: host:container
+    # Access the application at http://localhost:8000
+    ports:
+      - "8000:8000"
+
+    # Volume mounts for data persistence
+    # The ./data directory stores the SQLite database (scans.db)
+    volumes:
+      - ./data:/app/data
+
+    # Environment variables for application configuration
+    # These can be overridden by creating a .env file in the project root
+    environment:
+      # Python runtime configuration
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+
+      # Application settings
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+
+      # Security: CORS allowed origins (comma-separated)
+      # Set in .env for production deployments
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+
+      # Database configuration (uses mounted volume)
+      # The database file is stored at /app/data/scans.db inside the container
+      - DATABASE_PATH=/app/data/scans.db
+
+      # Server configuration
+      - HOST=0.0.0.0
+      - PORT=8000
+
+    # Restart policy: always restart unless explicitly stopped
+    # This ensures the service recovers from crashes and restarts on system boot
+    restart: unless-stopped
+
+    # Health check configuration
+    # Matches the HEALTHCHECK defined in the Dockerfile
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+    # Resource limits (optional, uncomment to enable)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1.0'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.25'
+    #       memory: 128M
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # TinySA Coordinator with Hardware Access (Optional Profile)
+  # ---------------------------------------------------------------------------
+  # Use this profile when you need to access the physical TinySA device.
+  # Requires running with: docker compose --profile hardware up -d
+  #
+  # Note: Device paths vary by OS:
+  #   - macOS: /dev/cu.usbmodem4001
+  #   - Linux: /dev/ttyACM0
+  #   - Windows: Not supported in Docker (use native installation)
+  # ---------------------------------------------------------------------------
+  tinysa-coordinator-hardware:
+    extends:
+      service: tinysa-coordinator
+
+    # Override container name for hardware profile
+    container_name: tinysa-coordinator-hw
+
+    # Enable this profile with --profile hardware
+    profiles:
+      - hardware
+
+    # Device mapping for TinySA USB serial access
+    # Uncomment and modify the device path for your system
+    devices:
+      # Linux systems (most common)
+      - /dev/ttyACM0:/dev/ttyACM0
+      # Additional common Linux paths (uncomment if needed)
+      # - /dev/ttyUSB0:/dev/ttyUSB0
+
+    # Required for serial device access on Linux
+    # This grants the container permission to access serial devices
+    privileged: false
+    group_add:
+      - dialout
+
+# =============================================================================
+# Named Volumes (Alternative to Bind Mounts)
+# =============================================================================
+# Uncomment to use Docker-managed volumes instead of bind mounts.
+# This provides better isolation but data is managed by Docker.
+# =============================================================================
+# volumes:
+#   tinysa-data:
+#     driver: local
+#     name: tinysa-coordinator-data
+
+# =============================================================================
+# Networks (Optional)
+# =============================================================================
+# Uncomment to use a custom network for multi-service deployments.
+# =============================================================================
+# networks:
+#   tinysa-network:
+#     driver: bridge
+#     name: tinysa-coordinator-network

@@ -1,0 +1,64 @@
+name: Documentation Issue
+description: Report missing, incorrect, or unclear documentation
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation! Please fill out the form below.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - Missing documentation
+        - Incorrect/outdated information
+        - Unclear or confusing documentation
+        - Typo or formatting issue
+        - Missing example or code sample
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Where is the documentation issue located?
+      placeholder: e.g., README.md, API docs at /docs, CLAUDE.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the documentation issue
+      placeholder: Explain what's wrong or missing...
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Improvement
+      description: How would you improve this documentation?
+      placeholder: Describe your suggested changes or additions...
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be interested in contributing?
+      options:
+        - label: I would be willing to submit a PR to fix this documentation issue
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context about the documentation issue here
