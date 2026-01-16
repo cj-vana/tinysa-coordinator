@@ -55,7 +55,7 @@ export default function ScanDetail({ scanId, onClose }: ScanDetailProps) {
     )
   }
 
-  const handleExport = (format: 'wwb' | 'wsm' | 'csv') => {
+  const handleExport = (format: 'wwb' | 'wsm' | 'raw') => {
     exportMutation.mutate({ id: scanId, format })
   }
 
@@ -181,7 +181,7 @@ export default function ScanDetail({ scanId, onClose }: ScanDetailProps) {
           WSM
         </button>
         <button
-          onClick={() => handleExport('csv')}
+          onClick={() => handleExport('raw')}
           disabled={exportMutation.isPending}
           className="px-3 py-1.5 text-sm bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-400 rounded transition-colors disabled:opacity-50"
         >

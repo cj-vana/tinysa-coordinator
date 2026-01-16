@@ -105,8 +105,8 @@ async function deleteScan(id: number): Promise<void> {
   }
 }
 
-async function exportScan(id: number, format: 'wwb' | 'wsm' | 'csv'): Promise<Blob> {
-  const response = await fetch(`${API_BASE}/scans/${id}/export?format=${format}`)
+async function exportScan(id: number, format: 'wwb' | 'wsm' | 'raw'): Promise<Blob> {
+  const response = await fetch(`${API_BASE}/export/${id}/${format}`)
   if (!response.ok) {
     throw new Error(`Failed to export scan as ${format.toUpperCase()}`)
   }
@@ -153,14 +153,14 @@ export function useDeleteScan() {
 
 export function useExportScan() {
   return useMutation({
-    mutationFn: ({ id, format }: { id: number; format: 'wwb' | 'wsm' | 'csv' }) =>
+    mutationFn: ({ id, format }: { id: number; format: 'wwb' | 'wsm' | 'raw' }) =>
       exportScan(id, format),
     onSuccess: (blob, { format }) => {
       // Trigger download
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `scan.${format === 'csv' ? 'csv' : format}`
+      a.download = `scan.${format === 'raw' ? 'csv' : format}`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

@@ -2,7 +2,7 @@
  * MetadataEditor - Modal for editing scan metadata (name, location, notes, tags).
  */
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { SavedScanDetail, ScanUpdateData, parseTags } from '../../hooks/useHistory'
 
 interface MetadataEditorProps {
@@ -13,27 +13,22 @@ interface MetadataEditorProps {
   isSaving: boolean
 }
 
-export default function MetadataEditor({
+/**
+ * Internal form component that initializes state from props.
+ * Uses key prop from parent to reset when scan changes.
+ */
+function MetadataForm({
   scan,
-  isOpen,
   onClose,
   onSave,
   isSaving,
-}: MetadataEditorProps) {
+}: Omit<MetadataEditorProps, 'isOpen'>) {
+  // Initialize state directly from props - no useEffect needed
+  // Parent component uses key prop to force remount when scan changes
   const [name, setName] = useState(scan.name)
   const [location, setLocation] = useState(scan.location || '')
   const [notes, setNotes] = useState(scan.notes || '')
   const [tags, setTags] = useState(scan.tags || '')
-
-  // Reset form when scan changes or modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setName(scan.name)
-      setLocation(scan.location || '')
-      setNotes(scan.notes || '')
-      setTags(scan.tags || '')
-    }
-  }, [isOpen, scan])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,8 +45,6 @@ export default function MetadataEditor({
       onClose()
     }
   }
-
-  if (!isOpen) return null
 
   return (
     <div
@@ -175,5 +168,31 @@ export default function MetadataEditor({
         </form>
       </div>
     </div>
+  )
+}
+
+/**
+ * MetadataEditor wrapper that handles open/close state and uses key prop
+ * to reset the form when the scan changes. This avoids setState in useEffect.
+ */
+export default function MetadataEditor({
+  scan,
+  isOpen,
+  onClose,
+  onSave,
+  isSaving,
+}: MetadataEditorProps) {
+  if (!isOpen) return null
+
+  // Use scan.id as key to force remount when editing a different scan
+  // This ensures form state is initialized fresh from props
+  return (
+    <MetadataForm
+      key={scan.id}
+      scan={scan}
+      onClose={onClose}
+      onSave={onSave}
+      isSaving={isSaving}
+    />
   )
 }
