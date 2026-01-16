@@ -6,9 +6,10 @@ Provides endpoints for listing, viewing, creating, updating, and deleting saved 
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.exceptions import ScanNotFoundError
 from backend.db.database import get_async_session
 from backend.schemas.scan import (
     SavedScanCreate,
@@ -87,7 +88,7 @@ async def get_scan(
     )
 
     if not scan:
-        raise HTTPException(status_code=404, detail="Scan not found")
+        raise ScanNotFoundError(scan_id=scan_id)
 
     # Build response with data points
     data_points = [
@@ -187,7 +188,7 @@ async def update_scan(
     )
 
     if not scan:
-        raise HTTPException(status_code=404, detail="Scan not found")
+        raise ScanNotFoundError(scan_id=scan_id)
 
     # Get data point count
     data_point_count = await history_service.get_scan_data_point_count(
@@ -214,4 +215,4 @@ async def delete_scan(
     )
 
     if not deleted:
-        raise HTTPException(status_code=404, detail="Scan not found")
+        raise ScanNotFoundError(scan_id=scan_id)

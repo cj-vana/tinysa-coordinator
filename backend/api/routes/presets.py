@@ -4,9 +4,10 @@ API routes for frequency preset management.
 Provides CRUD operations for frequency presets with protection for built-in presets.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.exceptions import BuiltinPresetModificationError, PresetNotFoundError
 from backend.db.database import get_async_session
 from backend.schemas.preset import (
     FrequencyPresetCreate,
@@ -66,10 +67,7 @@ async def get_preset(
     """
     preset = await service.get_by_id(preset_id)
     if not preset:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Preset with ID {preset_id} not found",
-        )
+        raise PresetNotFoundError(preset_id=preset_id)
     return FrequencyPresetResponse.model_validate(preset)
 
 
@@ -89,16 +87,10 @@ async def update_preset(
     """
     existing = await service.get_by_id(preset_id)
     if not existing:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Preset with ID {preset_id} not found",
-        )
+        raise PresetNotFoundError(preset_id=preset_id)
 
     if existing.is_builtin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Built-in presets cannot be modified",
-        )
+        raise BuiltinPresetModificationError(operation="modify", preset_id=preset_id)
 
     preset = await service.update(preset_id, preset_data)
     return FrequencyPresetResponse.model_validate(preset)
@@ -119,15 +111,9 @@ async def delete_preset(
     """
     existing = await service.get_by_id(preset_id)
     if not existing:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Preset with ID {preset_id} not found",
-        )
+        raise PresetNotFoundError(preset_id=preset_id)
 
     if existing.is_builtin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Built-in presets cannot be deleted",
-        )
+        raise BuiltinPresetModificationError(operation="delete", preset_id=preset_id)
 
     await service.delete(preset_id)

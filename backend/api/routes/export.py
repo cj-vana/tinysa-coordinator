@@ -10,12 +10,13 @@ Endpoints:
 
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from backend.core.exceptions import ExportDataError, ExportFormatError, ScanNotFoundError
 from backend.db.database import get_async_session
 from backend.db.models import SavedScan
 from backend.services.export_service import (
@@ -48,12 +49,12 @@ async def get_scan_with_data(
     scan = result.scalar_one_or_none()
 
     if not scan:
-        raise HTTPException(status_code=404, detail=f"Scan with id {scan_id} not found")
+        raise ScanNotFoundError(scan_id=scan_id)
 
     if not scan.data_points:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Scan {scan_id} has no data points to export"
+        raise ExportDataError(
+            message=f"Scan {scan_id} has no data points to export",
+            scan_id=scan_id,
         )
 
     return scan
@@ -191,9 +192,10 @@ async def export_generic(
     }
 
     if format not in handlers:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unknown export format: {format}. Supported: wwb, wsm, raw, json"
+        raise ExportFormatError(
+            message=f"Unknown export format: {format}",
+            requested_format=format,
+            supported_formats=["wwb", "wsm", "raw", "json"],
         )
 
     return await handlers[format](scan_id, session)

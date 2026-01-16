@@ -5,6 +5,8 @@ Run with:
     uvicorn backend.main:app --reload
 """
 
+import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,12 +15,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
+from backend.api.middleware import RequestIDMiddleware, register_exception_handlers
 from backend.api.routes.device import router as device_router
 from backend.api.routes.history import router as history_router
 from backend.api.routes.presets import router as presets_router
 from backend.api.websocket.scan_ws import scan_websocket
+from backend.core.logging import setup_logging
 from backend.db.database import close_db, get_async_session, init_db
 from backend.db.seed import seed_builtin_presets
+
+# Initialize logging before anything else
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+LOG_FORMAT_JSON = os.environ.get("LOG_FORMAT", "text").lower() == "json"
+setup_logging(level=LOG_LEVEL, json_format=LOG_FORMAT_JSON)
+
+logger = logging.getLogger(__name__)
 
 # Static files directory for production builds
 STATIC_DIR = Path(__file__).parent.parent / "static"
@@ -28,16 +39,24 @@ STATIC_DIR = Path(__file__).parent.parent / "static"
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown events."""
     # Startup
+    logger.info("Starting TinySA Frequency Scanner API")
     await init_db()
+    logger.info("Database initialized")
+
     # Seed built-in presets
     async for session in get_async_session():
         count = await seed_builtin_presets(session)
         if count > 0:
-            print(f"Seeded {count} built-in presets")
+            logger.info(f"Seeded {count} built-in presets")
         break
+
+    logger.info("Application startup complete")
     yield
+
     # Shutdown
+    logger.info("Shutting down application")
     await close_db()
+    logger.info("Database connections closed")
 
 
 app = FastAPI(
@@ -46,6 +65,12 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# Register centralized exception handlers
+register_exception_handlers(app)
+
+# Add request ID middleware for tracing
+app.add_middleware(RequestIDMiddleware)
 
 # Configure CORS for frontend development
 app.add_middleware(

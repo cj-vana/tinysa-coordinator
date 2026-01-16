@@ -7,11 +7,12 @@ and managing device connections.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from backend.core.exceptions import DeviceAlreadyConnectedError, DeviceConnectionError
 from backend.core.tinysa import TinySAConnectionError
 from backend.schemas.device import DeviceInfo, DeviceStatus, SerialPort
 from backend.services.device_service import DeviceService, get_device_service
@@ -105,9 +106,9 @@ async def connect(
     # Check if already connected
     current_status = service.get_status()
     if current_status.connected:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Already connected to device on {current_status.port}. Disconnect first.",
+        raise DeviceAlreadyConnectedError(
+            message=f"Already connected to device on {current_status.port}. Disconnect first.",
+            current_port=current_status.port,
         )
 
     try:
@@ -119,10 +120,10 @@ async def connect(
             port=device_info.get("port", request.port),
         )
     except TinySAConnectionError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+        raise DeviceConnectionError(
+            message=str(e),
+            port=request.port,
+        ) from e
 
 
 @router.post("/disconnect", response_model=DisconnectResponse)
