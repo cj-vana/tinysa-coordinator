@@ -1,73 +1,71 @@
 # =============================================================================
 # TinySA Coordinator - Multi-stage Dockerfile
 # =============================================================================
-# This Dockerfile creates a production-ready image with:
-# - Stage 1: Build frontend with Node.js
-# - Stage 2: Production runtime with Python backend serving static files
+# Production-ready image optimized for small size:
+# - Stage 1: Build frontend with Node.js 20 (Alpine)
+# - Stage 2: Production runtime with Python 3.11 (slim) serving backend + static
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # Stage 1: Frontend Build
 # -----------------------------------------------------------------------------
-FROM node:22-alpine AS frontend-builder
+FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
 # Copy package files first for better layer caching
 COPY frontend/package.json frontend/package-lock.json ./
 
-# Install dependencies
-RUN npm ci --no-audit --no-fund
+# Install dependencies (production only where possible, skip optional deps)
+RUN npm ci --no-audit --no-fund --ignore-scripts
 
 # Copy frontend source
 COPY frontend/ ./
 
-# Build the frontend
+# Build the frontend for production
 RUN npm run build
 
 # -----------------------------------------------------------------------------
 # Stage 2: Production Runtime
 # -----------------------------------------------------------------------------
-FROM python:3.12-slim AS production
+FROM python:3.11-slim AS production
 
-# Set environment variables
+# Set environment variables for optimization
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
-    # Disable pip version warnings
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PIP_ROOT_USER_ACTION=ignore
 
 WORKDIR /app
 
-# Install system dependencies for pyserial (serial port access)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Required for healthcheck
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install minimal system dependencies in a single layer and clean up
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Create non-root user for security
-RUN groupadd --gid 1000 appgroup \
-    && useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
+RUN groupadd --gid 1000 app \
+    && useradd --uid 1000 --gid app --shell /sbin/nologin --no-create-home app
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && rm -rf ~/.cache/pip
 
 # Copy backend code
-COPY backend/ ./backend/
+COPY --chown=app:app backend/ ./backend/
 
 # Copy built frontend from the builder stage
-COPY --from=frontend-builder /app/frontend/dist ./static
+COPY --from=frontend-builder --chown=app:app /app/frontend/dist ./static
 
-# Create data directory for SQLite database
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data
-
-# Change ownership of application files
-RUN chown -R appuser:appgroup /app
+# Create data directory for SQLite database with proper permissions
+RUN mkdir -p /app/data && chown -R app:app /app/data
 
 # Switch to non-root user
-USER appuser
+USER app
 
 # Expose the application port
 EXPOSE 8000
