@@ -137,11 +137,15 @@ class ScanConfig:
         Raises:
             ScanConfigError: If configuration is invalid
         """
+        # Convert rbw_khz to float if provided (handles string values from JSON)
+        rbw_khz_raw = data.get("rbw_khz")
+        rbw_khz = float(rbw_khz_raw) if rbw_khz_raw is not None else None
+
         config = cls(
             start_freq_hz=int(data["start_freq_hz"]),
             stop_freq_hz=int(data["stop_freq_hz"]),
             points=int(data.get("points", 450)),
-            rbw_khz=data.get("rbw_khz"),
+            rbw_khz=rbw_khz,
         )
 
         # Validate the config
