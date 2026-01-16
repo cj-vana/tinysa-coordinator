@@ -18,6 +18,31 @@ type SortOrder = 'asc' | 'desc'
 
 const ITEMS_PER_PAGE = 10
 
+interface SortIconProps {
+  column: SortColumn
+  sortBy: SortColumn
+  sortOrder: SortOrder
+}
+
+function SortIcon({ column, sortBy, sortOrder }: SortIconProps) {
+  if (sortBy !== column) {
+    return (
+      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+      </svg>
+    )
+  }
+  return sortOrder === 'asc' ? (
+    <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+    </svg>
+  ) : (
+    <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  )
+}
+
 export default function ScanHistoryList({
   onSelectScan,
   onDeleteScan,
@@ -49,25 +74,6 @@ export default function ScanHistoryList({
       setSortOrder('asc')
     }
     setPage(1) // Reset to first page when sorting changes
-  }
-
-  const SortIcon = ({ column }: { column: SortColumn }) => {
-    if (sortBy !== column) {
-      return (
-        <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
-      )
-    }
-    return sortOrder === 'asc' ? (
-      <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-      </svg>
-    ) : (
-      <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    )
   }
 
   const totalPages = data ? Math.ceil(data.total / ITEMS_PER_PAGE) : 0
@@ -125,7 +131,7 @@ export default function ScanHistoryList({
               >
                 <div className="flex items-center gap-2">
                   Name
-                  <SortIcon column="name" />
+                  <SortIcon column="name" sortBy={sortBy} sortOrder={sortOrder} />
                 </div>
               </th>
               <th
@@ -134,7 +140,7 @@ export default function ScanHistoryList({
               >
                 <div className="flex items-center gap-2">
                   Frequency Range
-                  <SortIcon column="start_freq_hz" />
+                  <SortIcon column="start_freq_hz" sortBy={sortBy} sortOrder={sortOrder} />
                 </div>
               </th>
               <th
@@ -143,7 +149,7 @@ export default function ScanHistoryList({
               >
                 <div className="flex items-center gap-2">
                   Location
-                  <SortIcon column="location" />
+                  <SortIcon column="location" sortBy={sortBy} sortOrder={sortOrder} />
                 </div>
               </th>
               <th
@@ -152,7 +158,7 @@ export default function ScanHistoryList({
               >
                 <div className="flex items-center gap-2">
                   Date
-                  <SortIcon column="created_at" />
+                  <SortIcon column="created_at" sortBy={sortBy} sortOrder={sortOrder} />
                 </div>
               </th>
               <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">
