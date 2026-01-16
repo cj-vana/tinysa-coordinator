@@ -53,6 +53,10 @@ services:
       # Application settings
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
 
+      # Security: CORS allowed origins (comma-separated)
+      # Set in .env for production deployments
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
+
       # Database configuration (uses mounted volume)
       # The database file is stored at /app/data/scans.db inside the container
       - DATABASE_PATH=/app/data/scans.db
