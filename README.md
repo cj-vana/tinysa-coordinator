@@ -50,7 +50,7 @@ cd frequency-scanner
 docker compose up -d
 ```
 
-Access the application at http://localhost:3000 (frontend) and http://localhost:8000 (API).
+Access the application at http://localhost:8000 (the frontend is served from the same port).
 
 To stop:
 
