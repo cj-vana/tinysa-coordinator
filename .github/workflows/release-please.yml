@@ -68,6 +68,29 @@ jobs:
           path: frontend/dist/
           retention-days: 90
 
+      - name: Upload install.sh to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: |
+            install.sh
+            Makefile
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t tinysa-coordinator:${{ needs.release-please.outputs.tag_name }} .
+          docker save tinysa-coordinator:${{ needs.release-please.outputs.tag_name }} | gzip > tinysa-coordinator-${{ needs.release-please.outputs.tag_name }}.tar.gz
+
+      - name: Upload Docker image to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: tinysa-coordinator-${{ needs.release-please.outputs.tag_name }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Release summary
         run: |
           echo "## Release Created :rocket:" >> $GITHUB_STEP_SUMMARY
@@ -75,3 +98,13 @@ jobs:
           echo "**Tag:** ${{ needs.release-please.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ needs.release-please.outputs.major }}.${{ needs.release-please.outputs.minor }}.${{ needs.release-please.outputs.patch }}" >> $GITHUB_STEP_SUMMARY
           echo "**SHA:** ${{ needs.release-please.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Assets" >> $GITHUB_STEP_SUMMARY
+          echo "- \`install.sh\` - One-liner installer script" >> $GITHUB_STEP_SUMMARY
+          echo "- \`Makefile\` - Development commands" >> $GITHUB_STEP_SUMMARY
+          echo "- \`tinysa-coordinator-${{ needs.release-please.outputs.tag_name }}.tar.gz\` - Docker image" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Quick Install" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "curl -sSL https://github.com/cj-vana/frequency-scanner/releases/download/${{ needs.release-please.outputs.tag_name }}/install.sh | bash" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

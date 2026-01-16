@@ -50,3 +50,8 @@ frontend/dist/
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Claude orchestrator state
+.claude/orchestrator/
+claude-progress.txt
+init.sh
