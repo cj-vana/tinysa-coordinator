@@ -5,14 +5,13 @@ These tests verify the TinySA device connection and management endpoints,
 including listing ports, checking device status, connecting, and disconnecting.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
 
 from backend.core.tinysa import TinySA, TinySAConnectionError
 from backend.services.device_service import DeviceService
-
 
 # =============================================================================
 # Fixtures

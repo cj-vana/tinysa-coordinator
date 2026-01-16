@@ -9,9 +9,8 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict
 
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -124,7 +123,7 @@ async def health_check() -> HealthCheckResponse:
 
     Returns overall system health including database connectivity verification.
     """
-    components: Dict[str, ComponentHealth] = {}
+    components: dict[str, ComponentHealth] = {}
     overall_status = HealthStatus.HEALTHY
 
     # Check database connectivity
@@ -137,7 +136,7 @@ async def health_check() -> HealthCheckResponse:
 
     return HealthCheckResponse(
         status=overall_status,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
         version=app.version,
         components=components,
     )

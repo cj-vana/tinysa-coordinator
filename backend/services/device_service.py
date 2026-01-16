@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from backend.core.tinysa import TinySA, TinySAConnectionError, TinySAError, get_tinysa
 
@@ -20,11 +20,11 @@ class DeviceState:
     """Cached device state information."""
 
     connected: bool = False
-    port: Optional[str] = None
-    version: Optional[str] = None
-    hardware: Optional[str] = None
-    device_type: Optional[str] = None
-    error: Optional[str] = None
+    port: str | None = None
+    version: str | None = None
+    hardware: str | None = None
+    device_type: str | None = None
+    error: str | None = None
 
 
 class DeviceService:
@@ -34,7 +34,7 @@ class DeviceService:
     cached device state for efficient status queries.
     """
 
-    def __init__(self, tinysa: Optional[TinySA] = None) -> None:
+    def __init__(self, tinysa: TinySA | None = None) -> None:
         """Initialize the device service.
 
         Args:
@@ -184,7 +184,7 @@ class DeviceService:
 
 
 # Singleton service instance
-_device_service: Optional[DeviceService] = None
+_device_service: DeviceService | None = None
 
 
 def get_device_service() -> DeviceService:

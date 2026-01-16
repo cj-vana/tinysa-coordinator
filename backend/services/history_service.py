@@ -5,7 +5,6 @@ Provides async database operations for managing saved scans.
 """
 
 import logging
-from typing import Optional
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,7 +20,7 @@ async def list_scans(
     session: AsyncSession,
     limit: int = 20,
     offset: int = 0,
-    search: Optional[str] = None,
+    search: str | None = None,
 ) -> tuple[list[SavedScan], int]:
     """
     List saved scans with pagination, optionally filtered by search term.
@@ -71,7 +70,7 @@ async def get_scan_by_id(
     session: AsyncSession,
     scan_id: int,
     include_data_points: bool = True,
-) -> Optional[SavedScan]:
+) -> SavedScan | None:
     """
     Get a single scan by ID.
 
@@ -185,7 +184,7 @@ async def update_scan(
     session: AsyncSession,
     scan_id: int,
     update_data: SavedScanUpdate,
-) -> Optional[SavedScan]:
+) -> SavedScan | None:
     """
     Update scan metadata.
 

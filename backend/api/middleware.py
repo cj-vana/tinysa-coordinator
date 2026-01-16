@@ -9,7 +9,8 @@ Provides:
 import logging
 import time
 import uuid
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from fastapi import FastAPI, status
 from fastapi.exceptions import RequestValidationError
@@ -101,7 +102,7 @@ def create_problem_response(
     status_code: int,
     error_code: str,
     detail: str,
-    extra: Optional[dict[str, Any]] = None,
+    extra: dict[str, Any] | None = None,
 ) -> JSONResponse:
     """Create an RFC 7807 Problem Details JSON response.
 

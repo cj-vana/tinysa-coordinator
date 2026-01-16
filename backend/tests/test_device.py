@@ -4,7 +4,7 @@ Tests for the device management API routes.
 These tests verify the TinySA device connection and management endpoints.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from httpx import AsyncClient

@@ -6,7 +6,6 @@ These models handle request/response validation for the preset endpoints.
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -24,7 +23,7 @@ class FrequencyPresetBase(BaseModel):
     """Base schema with common preset fields."""
 
     name: str = Field(..., min_length=1, max_length=100, description="Preset name")
-    description: Optional[str] = Field(None, description="Optional description")
+    description: str | None = Field(None, description="Optional description")
     start_freq_hz: int = Field(
         ..., gt=0, description="Start frequency in Hz (must be positive)"
     )
@@ -34,7 +33,7 @@ class FrequencyPresetBase(BaseModel):
     points: int = Field(
         default=450, ge=10, le=10000, description="Number of scan points"
     )
-    rbw_khz: Optional[float] = Field(
+    rbw_khz: float | None = Field(
         None, gt=0, description="Resolution bandwidth in kHz"
     )
     category: PresetCategory = Field(
@@ -60,13 +59,13 @@ class FrequencyPresetCreate(FrequencyPresetBase):
 class FrequencyPresetUpdate(BaseModel):
     """Schema for updating an existing preset (all fields optional)."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = None
-    start_freq_hz: Optional[int] = Field(None, gt=0)
-    stop_freq_hz: Optional[int] = Field(None, gt=0)
-    points: Optional[int] = Field(None, ge=10, le=10000)
-    rbw_khz: Optional[float] = Field(None, gt=0)
-    category: Optional[PresetCategory] = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = None
+    start_freq_hz: int | None = Field(None, gt=0)
+    stop_freq_hz: int | None = Field(None, gt=0)
+    points: int | None = Field(None, ge=10, le=10000)
+    rbw_khz: float | None = Field(None, gt=0)
+    category: PresetCategory | None = None
 
 
 class FrequencyPresetResponse(FrequencyPresetBase):

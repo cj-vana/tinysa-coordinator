@@ -5,7 +5,6 @@ These models handle request/response validation for scan-related endpoints.
 """
 
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -42,12 +41,12 @@ class SavedScanBase(BaseModel):
     start_freq_hz: int = Field(..., gt=0, description="Start frequency in Hz")
     stop_freq_hz: int = Field(..., gt=0, description="Stop frequency in Hz")
     points: int = Field(..., ge=10, le=10000, description="Number of data points")
-    rbw_khz: Optional[float] = Field(
+    rbw_khz: float | None = Field(
         None, gt=0, description="Resolution bandwidth in kHz"
     )
-    location: Optional[str] = Field(None, max_length=200, description="Scan location")
-    notes: Optional[str] = Field(None, description="Additional notes")
-    tags: Optional[str] = Field(
+    location: str | None = Field(None, max_length=200, description="Scan location")
+    notes: str | None = Field(None, description="Additional notes")
+    tags: str | None = Field(
         None, max_length=500, description="Comma-separated tags"
     )
 
@@ -64,16 +63,16 @@ class SavedScanBase(BaseModel):
 class SavedScanCreate(SavedScanBase):
     """Schema for creating a new scan with data points."""
 
-    preset_id: Optional[int] = Field(
+    preset_id: int | None = Field(
         None, description="ID of the preset used (if any)"
     )
-    preset_name: Optional[str] = Field(
+    preset_name: str | None = Field(
         None, max_length=100, description="Snapshot of preset name"
     )
-    scan_started_at: Optional[datetime] = Field(
+    scan_started_at: datetime | None = Field(
         None, description="When the scan started"
     )
-    scan_completed_at: Optional[datetime] = Field(
+    scan_completed_at: datetime | None = Field(
         None, description="When the scan completed"
     )
     data_points: list[ScanDataPointCreate] = Field(
@@ -84,10 +83,10 @@ class SavedScanCreate(SavedScanBase):
 class SavedScanUpdate(BaseModel):
     """Schema for updating scan metadata (not data points)."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=200)
-    location: Optional[str] = Field(None, max_length=200)
-    notes: Optional[str] = None
-    tags: Optional[str] = Field(None, max_length=500)
+    name: str | None = Field(None, min_length=1, max_length=200)
+    location: str | None = Field(None, max_length=200)
+    notes: str | None = None
+    tags: str | None = Field(None, max_length=500)
 
 
 class SavedScanResponse(SavedScanBase):
@@ -96,10 +95,10 @@ class SavedScanResponse(SavedScanBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    preset_id: Optional[int] = None
-    preset_name: Optional[str] = None
-    scan_started_at: Optional[datetime] = None
-    scan_completed_at: Optional[datetime] = None
+    preset_id: int | None = None
+    preset_name: str | None = None
+    scan_started_at: datetime | None = None
+    scan_completed_at: datetime | None = None
     created_at: datetime
     data_point_count: int = Field(
         default=0, description="Number of data points in this scan"
@@ -145,9 +144,9 @@ class SavedScanSummary(BaseModel):
     start_freq_hz: int
     stop_freq_hz: int
     points: int
-    preset_name: Optional[str] = None
-    location: Optional[str] = None
-    scan_completed_at: Optional[datetime] = None
+    preset_name: str | None = None
+    location: str | None = None
+    scan_completed_at: datetime | None = None
     created_at: datetime
 
     @property
@@ -182,5 +181,5 @@ class ScanDataForExport(BaseModel):
     start_freq_hz: int
     stop_freq_hz: int
     points: list[tuple[int, float]]  # List of (frequency_hz, amplitude_dbm) tuples
-    location: Optional[str] = None
-    scan_completed_at: Optional[datetime] = None
+    location: str | None = None
+    scan_completed_at: datetime | None = None

@@ -4,8 +4,8 @@ Database configuration and session management for the frequency scanner.
 Uses SQLAlchemy 2.0 async engine with SQLite via aiosqlite.
 """
 
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,

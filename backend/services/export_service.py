@@ -10,9 +10,9 @@ Supports:
 
 import json
 import logging
+from collections.abc import AsyncGenerator
 from datetime import datetime
 from io import StringIO
-from typing import AsyncGenerator
 
 from backend.db.models import SavedScan
 

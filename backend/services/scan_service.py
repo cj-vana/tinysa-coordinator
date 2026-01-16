@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any
 
 from backend.core.tinysa import (
     TinySA,
@@ -62,7 +63,7 @@ class ScanConfig:
     start_freq_hz: int
     stop_freq_hz: int
     points: int = 450
-    rbw_khz: Optional[float] = None
+    rbw_khz: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert config to dictionary."""
@@ -125,7 +126,7 @@ class ScanConfig:
         return errors
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ScanConfig":
+    def from_dict(cls, data: dict[str, Any]) -> ScanConfig:
         """Create config from dictionary.
 
         Args:
@@ -164,9 +165,9 @@ class ScanSession:
 
     def __init__(
         self,
-        websocket: "WebSocket",
+        websocket: WebSocket,
         send_callback: Callable[[dict[str, Any]], Any],
-        tinysa: Optional[TinySA] = None,
+        tinysa: TinySA | None = None,
     ) -> None:
         """Initialize a scan session.
 
@@ -180,7 +181,7 @@ class ScanSession:
         self._tinysa = tinysa or get_tinysa()
         self._scanning = False
         self._cancel_requested = False
-        self._current_task: Optional[asyncio.Task] = None
+        self._current_task: asyncio.Task | None = None
 
     @property
     def is_scanning(self) -> bool:
@@ -282,11 +283,11 @@ class ScanService:
 
     def __init__(self) -> None:
         """Initialize the scan service."""
-        self._sessions: dict["WebSocket", ScanSession] = {}
+        self._sessions: dict[WebSocket, ScanSession] = {}
 
     def get_session(
         self,
-        websocket: "WebSocket",
+        websocket: WebSocket,
         send_callback: Callable[[dict[str, Any]], Any],
     ) -> ScanSession:
         """Get or create a scan session for a WebSocket connection.
@@ -303,7 +304,7 @@ class ScanService:
             logger.debug(f"Created new scan session, total active sessions: {len(self._sessions)}")
         return self._sessions[websocket]
 
-    def remove_session(self, websocket: "WebSocket") -> None:
+    def remove_session(self, websocket: WebSocket) -> None:
         """Remove a scan session when a WebSocket disconnects.
 
         Args:
@@ -324,7 +325,7 @@ class ScanService:
 
 
 # Singleton instance for application-wide use
-_scan_service: Optional[ScanService] = None
+_scan_service: ScanService | None = None
 
 
 def get_scan_service() -> ScanService:

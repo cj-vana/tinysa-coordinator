@@ -24,7 +24,6 @@ from backend.db.database import Base, get_async_session
 from backend.db.models import FrequencyPreset, SavedScan, ScanDataPoint  # noqa: F401
 from backend.main import app
 
-
 # In-memory SQLite for testing
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

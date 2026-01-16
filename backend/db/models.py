@@ -25,7 +25,7 @@ class FrequencyPreset(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Frequency range in Hz (use BigInteger for frequencies up to ~6GHz)
     start_freq_hz: Mapped[int] = mapped_column(BigInteger, nullable=False)
@@ -33,7 +33,7 @@ class FrequencyPreset(Base):
 
     # Scan parameters
     points: Mapped[int] = mapped_column(default=450, nullable=False)
-    rbw_khz: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    rbw_khz: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Organization
     category: Mapped[str] = mapped_column(
@@ -78,26 +78,26 @@ class SavedScan(Base):
     start_freq_hz: Mapped[int] = mapped_column(BigInteger, nullable=False)
     stop_freq_hz: Mapped[int] = mapped_column(BigInteger, nullable=False)
     points: Mapped[int] = mapped_column(nullable=False)
-    rbw_khz: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    rbw_khz: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Preset reference (optional - scan may have used custom parameters)
-    preset_id: Mapped[Optional[int]] = mapped_column(
+    preset_id: Mapped[int | None] = mapped_column(
         ForeignKey("frequency_presets.id", ondelete="SET NULL"), nullable=True
     )
-    preset_name: Mapped[Optional[str]] = mapped_column(
+    preset_name: Mapped[str | None] = mapped_column(
         String(100), nullable=True
     )  # Snapshot of preset name at scan time
 
     # Metadata
-    location: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    tags: Mapped[Optional[str]] = mapped_column(
+    location: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tags: Mapped[str | None] = mapped_column(
         String(500), nullable=True
     )  # Comma-separated tags
 
     # Timing
-    scan_started_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
-    scan_completed_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    scan_started_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    scan_completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, nullable=False)
 
     # Relationships
@@ -120,7 +120,7 @@ class SavedScan(Base):
         )
 
     @property
-    def duration_seconds(self) -> Optional[float]:
+    def duration_seconds(self) -> float | None:
         """Calculate scan duration if both timestamps are available."""
         if self.scan_started_at and self.scan_completed_at:
             return (self.scan_completed_at - self.scan_started_at).total_seconds()

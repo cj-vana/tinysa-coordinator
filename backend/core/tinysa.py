@@ -10,7 +10,7 @@ import asyncio
 import logging
 import struct
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any
 
 import serial
 import serial.tools.list_ports
@@ -62,9 +62,9 @@ class TinySA:
 
     def __init__(self) -> None:
         """Initialize the TinySA instance."""
-        self._serial: Optional[serial.Serial] = None
+        self._serial: serial.Serial | None = None
         self._lock = asyncio.Lock()
-        self._port: Optional[str] = None
+        self._port: str | None = None
 
     @property
     def is_connected(self) -> bool:
@@ -72,7 +72,7 @@ class TinySA:
         return self._serial is not None and self._serial.is_open
 
     @property
-    def port(self) -> Optional[str]:
+    def port(self) -> str | None:
         """Get the current serial port, or None if not connected."""
         return self._port
 
@@ -180,7 +180,7 @@ class TinySA:
                     self._port = None
                     logger.info("Disconnected from TinySA")
 
-    async def set_rbw(self, rbw_khz: Optional[float]) -> None:
+    async def set_rbw(self, rbw_khz: float | None) -> None:
         """Set the resolution bandwidth.
 
         Args:
@@ -234,7 +234,7 @@ class TinySA:
             # Send scanraw command
             cmd = f"scanraw {start_hz} {stop_hz} {points}\r\n"
             self._serial.write(cmd.encode())
-            logger.debug(f"Sent scanraw command to device")
+            logger.debug("Sent scanraw command to device")
 
             # Read until we find the '{' marker that indicates binary data start
             buffer = b""
@@ -412,7 +412,7 @@ class TinySA:
 
 
 # Singleton instance for application-wide use
-_tinysa_instance: Optional[TinySA] = None
+_tinysa_instance: TinySA | None = None
 
 
 def get_tinysa() -> TinySA:

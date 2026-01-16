@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db.models import FrequencyPreset
 
-
 # Built-in presets configuration
 # Frequencies are in Hz for database storage
 BUILTIN_PRESETS = [

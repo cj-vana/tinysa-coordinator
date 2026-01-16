@@ -5,7 +5,6 @@ Uses async SQLAlchemy for database operations.
 """
 
 import logging
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +38,7 @@ class PresetService:
         logger.debug(f"Retrieved {len(presets)} presets")
         return presets
 
-    async def get_by_id(self, preset_id: int) -> Optional[FrequencyPreset]:
+    async def get_by_id(self, preset_id: int) -> FrequencyPreset | None:
         """
         Get a single preset by ID.
 
@@ -92,7 +91,7 @@ class PresetService:
 
     async def update(
         self, preset_id: int, preset_data: FrequencyPresetUpdate
-    ) -> Optional[FrequencyPreset]:
+    ) -> FrequencyPreset | None:
         """
         Update an existing preset.
 

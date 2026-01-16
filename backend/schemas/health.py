@@ -4,7 +4,6 @@ Pydantic schemas for health check responses.
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -21,8 +20,8 @@ class ComponentHealth(BaseModel):
     """Health status for an individual component."""
 
     status: HealthStatus = Field(..., description="Component health status")
-    message: Optional[str] = Field(None, description="Optional status message")
-    latency_ms: Optional[float] = Field(None, description="Response latency in milliseconds")
+    message: str | None = Field(None, description="Optional status message")
+    latency_ms: float | None = Field(None, description="Response latency in milliseconds")
 
 
 class HealthCheckResponse(BaseModel):
@@ -31,7 +30,7 @@ class HealthCheckResponse(BaseModel):
     status: HealthStatus = Field(..., description="Overall system health status")
     timestamp: datetime = Field(..., description="Timestamp of health check")
     version: str = Field(..., description="Application version")
-    components: Dict[str, ComponentHealth] = Field(
+    components: dict[str, ComponentHealth] = Field(
         default_factory=dict, description="Individual component health statuses"
     )
 

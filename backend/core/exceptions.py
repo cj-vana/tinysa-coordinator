@@ -6,7 +6,7 @@ error responses via the error handling middleware. All exceptions follow
 RFC 7807 Problem Details format conventions.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 
 class AppException(Exception):
@@ -27,7 +27,7 @@ class AppException(Exception):
         message: str,
         status_code: int = 500,
         error_code: str = "internal_error",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         self.message = message
         self.status_code = status_code
@@ -66,7 +66,7 @@ class DeviceError(AppException):
         message: str,
         status_code: int = 400,
         error_code: str = "device_error",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message, status_code, error_code, details)
 
@@ -77,7 +77,7 @@ class DeviceNotConnectedError(DeviceError):
     def __init__(
         self,
         message: str = "No TinySA device is connected",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             message=message,
@@ -93,8 +93,8 @@ class DeviceConnectionError(DeviceError):
     def __init__(
         self,
         message: str = "Failed to connect to TinySA device",
-        port: Optional[str] = None,
-        details: Optional[dict[str, Any]] = None,
+        port: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         extra_details = details or {}
         if port:
@@ -113,8 +113,8 @@ class DeviceAlreadyConnectedError(DeviceError):
     def __init__(
         self,
         message: str = "A device is already connected",
-        current_port: Optional[str] = None,
-        details: Optional[dict[str, Any]] = None,
+        current_port: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         extra_details = details or {}
         if current_port:
@@ -133,7 +133,7 @@ class DeviceCommunicationError(DeviceError):
     def __init__(
         self,
         message: str = "Communication with TinySA device failed",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             message=message,
@@ -156,7 +156,7 @@ class ScanError(AppException):
         message: str,
         status_code: int = 400,
         error_code: str = "scan_error",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message, status_code, error_code, details)
 
@@ -167,7 +167,7 @@ class ScanInProgressError(ScanError):
     def __init__(
         self,
         message: str = "A scan is already in progress",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             message=message,
@@ -183,7 +183,7 @@ class ScanConfigurationError(ScanError):
     def __init__(
         self,
         message: str = "Invalid scan configuration",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             message=message,
@@ -199,7 +199,7 @@ class ScanDataError(ScanError):
     def __init__(
         self,
         message: str = "Error processing scan data",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             message=message,
@@ -222,7 +222,7 @@ class ExportError(AppException):
         message: str,
         status_code: int = 400,
         error_code: str = "export_error",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message, status_code, error_code, details)
 
@@ -233,9 +233,9 @@ class ExportFormatError(ExportError):
     def __init__(
         self,
         message: str = "Unsupported export format",
-        requested_format: Optional[str] = None,
-        supported_formats: Optional[list[str]] = None,
-        details: Optional[dict[str, Any]] = None,
+        requested_format: str | None = None,
+        supported_formats: list[str] | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         extra_details = details or {}
         if requested_format:
@@ -256,8 +256,8 @@ class ExportDataError(ExportError):
     def __init__(
         self,
         message: str = "Cannot export scan data",
-        scan_id: Optional[int] = None,
-        details: Optional[dict[str, Any]] = None,
+        scan_id: int | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         extra_details = details or {}
         if scan_id is not None:
@@ -281,9 +281,9 @@ class ResourceNotFoundError(AppException):
     def __init__(
         self,
         resource_type: str,
-        resource_id: Optional[Any] = None,
-        message: Optional[str] = None,
-        details: Optional[dict[str, Any]] = None,
+        resource_id: Any | None = None,
+        message: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         extra_details = details or {}
         extra_details["resource_type"] = resource_type
@@ -310,8 +310,8 @@ class ScanNotFoundError(ResourceNotFoundError):
     def __init__(
         self,
         scan_id: int,
-        message: Optional[str] = None,
-        details: Optional[dict[str, Any]] = None,
+        message: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             resource_type="Scan",
@@ -327,8 +327,8 @@ class PresetNotFoundError(ResourceNotFoundError):
     def __init__(
         self,
         preset_id: int,
-        message: Optional[str] = None,
-        details: Optional[dict[str, Any]] = None,
+        message: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             resource_type="Preset",
@@ -350,7 +350,7 @@ class ForbiddenError(AppException):
         self,
         message: str = "Operation not permitted",
         error_code: str = "forbidden",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             message=message,
@@ -366,8 +366,8 @@ class BuiltinPresetModificationError(ForbiddenError):
     def __init__(
         self,
         operation: str = "modify",
-        preset_id: Optional[int] = None,
-        details: Optional[dict[str, Any]] = None,
+        preset_id: int | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         extra_details = details or {}
         extra_details["operation"] = operation
@@ -392,8 +392,8 @@ class ValidationError(AppException):
     def __init__(
         self,
         message: str = "Validation failed",
-        errors: Optional[list[dict[str, Any]]] = None,
-        details: Optional[dict[str, Any]] = None,
+        errors: list[dict[str, Any]] | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         extra_details = details or {}
         if errors:
@@ -418,7 +418,7 @@ class DatabaseError(AppException):
     def __init__(
         self,
         message: str = "Database operation failed",
-        details: Optional[dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
             message=message,

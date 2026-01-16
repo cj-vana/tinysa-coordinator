@@ -8,19 +8,18 @@ utilities for consistent logging throughout the application.
 import logging
 import sys
 from contextvars import ContextVar
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 # Context variable for request ID tracking across async operations
-request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
+request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
 
 
-def get_request_id() -> Optional[str]:
+def get_request_id() -> str | None:
     """Get the current request ID from context."""
     return request_id_var.get()
 
 
-def set_request_id(request_id: Optional[str]) -> None:
+def set_request_id(request_id: str | None) -> None:
     """Set the request ID in the current context."""
     request_id_var.set(request_id)
 
@@ -41,7 +40,7 @@ class StructuredFormatter(logging.Formatter):
     def __init__(
         self,
         include_request_id: bool = True,
-        datefmt: Optional[str] = None,
+        datefmt: str | None = None,
     ) -> None:
         """Initialize the formatter.
 
@@ -55,7 +54,7 @@ class StructuredFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """Format the log record with structured output."""
         # Generate ISO 8601 timestamp
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
         # Get log level with consistent width
         level = record.levelname.ljust(8)
@@ -98,7 +97,7 @@ class JSONFormatter(logging.Formatter):
         import json
 
         log_data = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),

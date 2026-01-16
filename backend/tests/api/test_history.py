@@ -16,7 +16,6 @@ from httpx import AsyncClient
 
 from backend.db.models import SavedScan, ScanDataPoint
 
-
 # =============================================================================
 # Fixtures for history tests
 # =============================================================================
@@ -561,7 +560,7 @@ async def test_delete_scan_removes_data_points(
     scan_id = scan_in_db.id
 
     # Verify data points exist before delete
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
     count_query = select(func.count()).where(ScanDataPoint.scan_id == scan_id)
     result = await test_session.execute(count_query)
     initial_count = result.scalar()

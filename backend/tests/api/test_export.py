@@ -23,7 +23,6 @@ from backend.db.database import Base, get_async_session
 from backend.db.models import SavedScan, ScanDataPoint
 from backend.main import app
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================

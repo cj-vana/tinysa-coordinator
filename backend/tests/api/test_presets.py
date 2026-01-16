@@ -19,7 +19,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.db.models import FrequencyPreset
 
-
 # ============================================================================
 # Fixtures
 # ============================================================================
@@ -722,3 +721,6 @@ async def test_preset_timestamps_updated(
     # Timestamps should be different (or at least the update should have worked)
     # Note: In fast tests, timestamps might be the same within same second
     assert update_response.status_code == 200
+    # Verify both timestamps are valid (not None/empty)
+    assert original_updated_at is not None
+    assert new_updated_at is not None
