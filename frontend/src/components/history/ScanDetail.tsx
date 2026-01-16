@@ -36,7 +36,7 @@ export default function ScanDetail({ scanId, onClose }: ScanDetailProps) {
       frequency_hz: point.frequency_hz,
       amplitude_dbm: point.amplitude_dbm,
     }))
-  }, [scan?.data_points])
+  }, [scan.data_points])
 
   // Find peak point
   const peakPoint: ScanPoint | null = useMemo(() => {
