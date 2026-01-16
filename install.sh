@@ -407,11 +407,28 @@ check_node() {
 clone_repo() {
     step "Setting up project directory..."
 
-    # Check if we're already in the project directory
+    # Get absolute path of current directory for comparison
+    local current_dir
+    current_dir="$(pwd)"
+
+    # Check if we're already in the project directory AND the user didn't specify a different one
+    # Only use cwd fallback when INSTALL_DIR is the default (relative path in cwd)
     if [ -f "requirements.txt" ] && [ -d "backend" ] && [ -d "frontend" ]; then
-        info "Already in the project directory"
-        INSTALL_DIR="$(pwd)"
-        return 0
+        # Convert INSTALL_DIR to absolute for comparison
+        local target_absolute
+        if [[ "$INSTALL_DIR" = /* ]]; then
+            target_absolute="$INSTALL_DIR"
+        else
+            target_absolute="$current_dir/$INSTALL_DIR"
+        fi
+
+        # Only use cwd if target would be within cwd (default case)
+        if [[ "$target_absolute" == "$current_dir"* ]]; then
+            info "Already in the project directory"
+            INSTALL_DIR="$current_dir"
+            return 0
+        fi
+        # Otherwise, user specified a different directory - continue with that
     fi
 
     # Check if target directory exists
