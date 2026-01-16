@@ -10,6 +10,7 @@ These tests verify proper error handling for:
 """
 
 import asyncio
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -23,7 +24,7 @@ from backend.main import app
 
 
 @pytest.fixture
-def mock_tinysa_for_ws():
+def mock_tinysa_for_ws() -> MagicMock:
     """Create a mock TinySA device for WebSocket tests."""
     mock = MagicMock()
     mock.is_connected = True
@@ -31,7 +32,9 @@ def mock_tinysa_for_ws():
     mock.set_rbw = AsyncMock()
 
     # Mock scan_raw to yield test data with a slight delay
-    async def mock_scan_raw(start_hz: int, stop_hz: int, points: int = 450):
+    async def mock_scan_raw(
+        start_hz: int, stop_hz: int, points: int = 450
+    ) -> AsyncGenerator[tuple[int, float], None]:
         """Generate mock scan data with async behavior."""
         freq_step = (stop_hz - start_hz) / (points - 1) if points > 1 else 0
         for i in range(points):
@@ -45,7 +48,7 @@ def mock_tinysa_for_ws():
 
 
 @pytest.fixture
-def mock_tinysa_disconnected():
+def mock_tinysa_disconnected() -> MagicMock:
     """Create a mock TinySA device that is not connected."""
     mock = MagicMock()
     mock.is_connected = False
@@ -62,7 +65,7 @@ class TestMalformedJSON:
     """Tests for handling malformed JSON messages over WebSocket."""
 
     @pytest.mark.unit
-    def test_completely_invalid_json(self, mock_tinysa_for_ws):
+    def test_completely_invalid_json(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that completely invalid JSON returns an error message."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -79,7 +82,7 @@ class TestMalformedJSON:
                 assert "Invalid JSON" in response["message"]
 
     @pytest.mark.unit
-    def test_empty_message(self, mock_tinysa_for_ws):
+    def test_empty_message(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that empty message is handled gracefully."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -95,7 +98,7 @@ class TestMalformedJSON:
                 assert "Invalid JSON" in response["message"]
 
     @pytest.mark.unit
-    def test_json_with_truncated_data(self, mock_tinysa_for_ws):
+    def test_json_with_truncated_data(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that truncated JSON data returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -111,7 +114,7 @@ class TestMalformedJSON:
                 assert "Invalid JSON" in response["message"]
 
     @pytest.mark.unit
-    def test_json_with_single_quotes(self, mock_tinysa_for_ws):
+    def test_json_with_single_quotes(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that JSON with single quotes (Python-style) is rejected."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -127,7 +130,7 @@ class TestMalformedJSON:
                 assert "Invalid JSON" in response["message"]
 
     @pytest.mark.unit
-    def test_json_with_trailing_comma(self, mock_tinysa_for_ws):
+    def test_json_with_trailing_comma(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that JSON with trailing comma is rejected."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -143,7 +146,7 @@ class TestMalformedJSON:
                 assert "Invalid JSON" in response["message"]
 
     @pytest.mark.unit
-    def test_binary_data_as_text(self, mock_tinysa_for_ws):
+    def test_binary_data_as_text(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that binary data sent as text is rejected."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -168,7 +171,7 @@ class TestInvalidFrequencies:
     """Tests for handling invalid frequency values in scan requests."""
 
     @pytest.mark.unit
-    def test_start_freq_greater_than_stop_freq(self, mock_tinysa_for_ws):
+    def test_start_freq_greater_than_stop_freq(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that start_freq_hz >= stop_freq_hz returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -192,7 +195,7 @@ class TestInvalidFrequencies:
                 assert "start_freq_hz must be less than stop_freq_hz" in response["message"]
 
     @pytest.mark.unit
-    def test_start_freq_equals_stop_freq(self, mock_tinysa_for_ws):
+    def test_start_freq_equals_stop_freq(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that equal start and stop frequencies return an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -216,7 +219,7 @@ class TestInvalidFrequencies:
                 assert "start_freq_hz must be less than stop_freq_hz" in response["message"]
 
     @pytest.mark.unit
-    def test_negative_start_frequency(self, mock_tinysa_for_ws):
+    def test_negative_start_frequency(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that negative start frequency returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -240,7 +243,7 @@ class TestInvalidFrequencies:
                 assert "start_freq_hz must be positive" in response["message"]
 
     @pytest.mark.unit
-    def test_non_numeric_frequency_string(self, mock_tinysa_for_ws):
+    def test_non_numeric_frequency_string(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that non-numeric frequency values return an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -267,7 +270,7 @@ class TestInvalidFrequencies:
                 )
 
     @pytest.mark.unit
-    def test_null_frequency_values(self, mock_tinysa_for_ws):
+    def test_null_frequency_values(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that null frequency values return an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -290,7 +293,7 @@ class TestInvalidFrequencies:
                 assert response["type"] == "error"
 
     @pytest.mark.unit
-    def test_missing_start_freq(self, mock_tinysa_for_ws):
+    def test_missing_start_freq(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that missing start_freq_hz returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -314,7 +317,7 @@ class TestInvalidFrequencies:
                 assert "start_freq_hz" in response["message"]
 
     @pytest.mark.unit
-    def test_missing_stop_freq(self, mock_tinysa_for_ws):
+    def test_missing_stop_freq(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that missing stop_freq_hz returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -338,7 +341,7 @@ class TestInvalidFrequencies:
                 assert "stop_freq_hz" in response["message"]
 
     @pytest.mark.unit
-    def test_missing_both_frequencies(self, mock_tinysa_for_ws):
+    def test_missing_both_frequencies(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that missing both frequencies returns appropriate error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -360,7 +363,7 @@ class TestInvalidFrequencies:
                 assert "Missing required fields" in response["message"]
 
     @pytest.mark.unit
-    def test_empty_config_object(self, mock_tinysa_for_ws):
+    def test_empty_config_object(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that empty config object returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -375,7 +378,7 @@ class TestInvalidFrequencies:
                 assert "Missing required fields" in response["message"]
 
     @pytest.mark.unit
-    def test_missing_config_entirely(self, mock_tinysa_for_ws):
+    def test_missing_config_entirely(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that missing config field returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -390,7 +393,7 @@ class TestInvalidFrequencies:
                 assert "Missing required fields" in response["message"]
 
     @pytest.mark.unit
-    def test_frequency_as_float(self, mock_tinysa_for_ws):
+    def test_frequency_as_float(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that float frequency values are accepted (converted to int)."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -424,11 +427,13 @@ class TestConcurrentScans:
     """Tests for handling concurrent scan attempts."""
 
     @pytest.mark.unit
-    def test_start_scan_while_already_scanning(self, mock_tinysa_for_ws):
+    def test_start_scan_while_already_scanning(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that starting a scan while one is in progress returns an error."""
 
         # Create a slow mock that gives us time to send another start_scan
-        async def slow_scan_raw(start_hz: int, stop_hz: int, points: int = 450):
+        async def slow_scan_raw(
+            start_hz: int, stop_hz: int, points: int = 450
+        ) -> AsyncGenerator[tuple[int, float], None]:
             for i in range(points):
                 freq_hz = int(start_hz + i * 1000)
                 await asyncio.sleep(0.1)  # Slow enough to test concurrent access
@@ -485,7 +490,7 @@ class TestConcurrentScans:
                 assert found_error, "Expected 'Scan already in progress' error"
 
     @pytest.mark.unit
-    def test_stop_scan_when_not_scanning(self, mock_tinysa_for_ws):
+    def test_stop_scan_when_not_scanning(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that stopping when no scan is in progress returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -510,7 +515,7 @@ class TestUnknownActions:
     """Tests for handling unknown WebSocket actions."""
 
     @pytest.mark.unit
-    def test_unknown_action(self, mock_tinysa_for_ws):
+    def test_unknown_action(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that unknown actions return an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -525,7 +530,7 @@ class TestUnknownActions:
                 assert "Unknown action" in response["message"]
 
     @pytest.mark.unit
-    def test_missing_action_field(self, mock_tinysa_for_ws):
+    def test_missing_action_field(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that missing action field returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -540,7 +545,7 @@ class TestUnknownActions:
                 assert "Unknown action" in response["message"]
 
     @pytest.mark.unit
-    def test_null_action(self, mock_tinysa_for_ws):
+    def test_null_action(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that null action returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -555,7 +560,7 @@ class TestUnknownActions:
                 assert "Unknown action" in response["message"]
 
     @pytest.mark.unit
-    def test_empty_action_string(self, mock_tinysa_for_ws):
+    def test_empty_action_string(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that empty action string returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -570,7 +575,7 @@ class TestUnknownActions:
                 assert "Unknown action" in response["message"]
 
     @pytest.mark.unit
-    def test_action_with_wrong_type(self, mock_tinysa_for_ws):
+    def test_action_with_wrong_type(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that action with wrong type (number) returns an error."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -594,7 +599,7 @@ class TestDeviceNotConnected:
     """Tests for handling scan requests when device is not connected."""
 
     @pytest.mark.unit
-    def test_start_scan_device_not_connected(self, mock_tinysa_disconnected):
+    def test_start_scan_device_not_connected(self, mock_tinysa_disconnected: MagicMock) -> None:
         """Test that starting a scan when device is not connected returns an error."""
         with (
             patch(
@@ -631,7 +636,7 @@ class TestEdgeCases:
     """Tests for edge cases and boundary conditions."""
 
     @pytest.mark.unit
-    def test_very_large_frequency_values(self, mock_tinysa_for_ws):
+    def test_very_large_frequency_values(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test handling of very large frequency values."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -655,7 +660,7 @@ class TestEdgeCases:
                 assert response["type"] in ["scan_started", "error"]
 
     @pytest.mark.unit
-    def test_zero_start_frequency(self, mock_tinysa_for_ws):
+    def test_zero_start_frequency(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that zero start frequency is handled."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -679,7 +684,7 @@ class TestEdgeCases:
                 assert response["type"] in ["scan_started", "error"]
 
     @pytest.mark.unit
-    def test_multiple_malformed_messages_in_sequence(self, mock_tinysa_for_ws):
+    def test_multiple_malformed_messages_in_sequence(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that multiple malformed messages are handled independently."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -703,7 +708,7 @@ class TestEdgeCases:
                 assert "No scan in progress" in response3["message"]
 
     @pytest.mark.unit
-    def test_extra_fields_in_config_are_ignored(self, mock_tinysa_for_ws):
+    def test_extra_fields_in_config_are_ignored(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test that extra fields in config don't cause errors."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
@@ -729,7 +734,7 @@ class TestEdgeCases:
                 assert response["type"] == "scan_started"
 
     @pytest.mark.unit
-    def test_deeply_nested_invalid_json(self, mock_tinysa_for_ws):
+    def test_deeply_nested_invalid_json(self, mock_tinysa_for_ws: MagicMock) -> None:
         """Test handling of deeply nested but malformed JSON."""
         with (
             patch("backend.services.scan_service.get_tinysa", return_value=mock_tinysa_for_ws),
