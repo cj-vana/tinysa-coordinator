@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse
 
 from backend.api.middleware import RequestIDMiddleware, register_exception_handlers
 from backend.api.routes.device import router as device_router
+from backend.api.routes.export import router as export_router
 from backend.api.routes.history import router as history_router
 from backend.api.routes.presets import router as presets_router
 from backend.api.websocket.scan_ws import scan_websocket
@@ -83,6 +84,7 @@ app.add_middleware(
 
 # Register routers
 app.include_router(device_router)
+app.include_router(export_router, prefix="/api")
 app.include_router(history_router)
 app.include_router(presets_router)
 
