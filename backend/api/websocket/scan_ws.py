@@ -13,7 +13,7 @@ from typing import Any
 from fastapi import WebSocket, WebSocketDisconnect
 
 from backend.core.connection_manager import get_connection_manager
-from backend.services.scan_service import ScanConfig, get_scan_service
+from backend.services.scan_service import ScanConfig, ScanConfigError, get_scan_service
 
 logger = logging.getLogger(__name__)
 
@@ -91,36 +91,26 @@ async def scan_websocket(websocket: WebSocket) -> None:
                     })
                     continue
 
-                # Validate frequency range
-                try:
-                    start_freq = int(config_data["start_freq_hz"])
-                    stop_freq = int(config_data["stop_freq_hz"])
-                    if start_freq >= stop_freq:
-                        await send_message({
-                            "type": "error",
-                            "message": "start_freq_hz must be less than stop_freq_hz"
-                        })
-                        continue
-                    if start_freq < 0:
-                        await send_message({
-                            "type": "error",
-                            "message": "start_freq_hz must be positive"
-                        })
-                        continue
-                except (ValueError, TypeError) as e:
-                    await send_message({
-                        "type": "error",
-                        "message": f"Invalid frequency value: {e}"
-                    })
-                    continue
-
-                # Create scan config
+                # Create and validate scan config
+                # ScanConfig.from_dict performs comprehensive validation including:
+                # - Frequency range (100 kHz - 6 GHz for TinySA Ultra)
+                # - Start/stop frequency ordering
+                # - Points count (10-10000)
+                # - RBW constraints (0.2-850 kHz, valid discrete values)
                 try:
                     config = ScanConfig.from_dict(config_data)
-                except (ValueError, KeyError) as e:
+                except ScanConfigError as e:
+                    logger.warning(f"Invalid scan config: {e}")
                     await send_message({
                         "type": "error",
-                        "message": f"Invalid scan config: {e}"
+                        "message": f"Invalid scan configuration: {e}"
+                    })
+                    continue
+                except (ValueError, TypeError, KeyError) as e:
+                    logger.warning(f"Error parsing scan config: {e}")
+                    await send_message({
+                        "type": "error",
+                        "message": f"Invalid scan config values: {e}"
                     })
                     continue
 
@@ -144,8 +134,8 @@ async def scan_websocket(websocket: WebSocket) -> None:
                 "type": "error",
                 "message": f"Internal server error: {e}"
             })
-        except Exception:
-            pass  # Client may already be disconnected
+        except Exception as send_error:
+            logger.debug(f"Failed to send error message to client (may be disconnected): {send_error}")
 
     finally:
         # Clean up on disconnect

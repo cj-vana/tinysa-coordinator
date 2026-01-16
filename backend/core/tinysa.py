@@ -173,8 +173,8 @@ class TinySA:
             if self._serial is not None:
                 try:
                     self._serial.close()
-                except serial.SerialException:
-                    pass  # Ignore errors during close
+                except serial.SerialException as e:
+                    logger.debug(f"Error closing serial connection (ignored): {e}")
                 finally:
                     self._serial = None
                     self._port = None
