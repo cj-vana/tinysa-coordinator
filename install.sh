@@ -345,7 +345,7 @@ check_node() {
         exit 1
     fi
 
-    local node_version=$(node --version | grep -oE '[0-9]+' | head -1)
+    local node_version=$(node --version | grep -oE '[0-9]+\.[0-9]+' | head -1)
 
     if ! version_gte "$node_version" "$MIN_NODE_VERSION"; then
         error "Node.js $MIN_NODE_VERSION or higher is required (found v$node_version)"
