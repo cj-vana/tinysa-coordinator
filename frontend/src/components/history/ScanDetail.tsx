@@ -29,14 +29,15 @@ export default function ScanDetail({ scanId, onClose }: ScanDetailProps) {
   const exportMutation = useExportScan()
 
   // Transform scan data points to chart format
+  const dataPoints = scan?.data_points
   const chartData: ScanPoint[] = useMemo(() => {
-    if (!scan?.data_points) return []
-    return scan.data_points.map((point) => ({
+    if (!dataPoints) return []
+    return dataPoints.map((point) => ({
       index: point.index,
       frequency_hz: point.frequency_hz,
       amplitude_dbm: point.amplitude_dbm,
     }))
-  }, [scan.data_points])
+  }, [dataPoints])
 
   // Find peak point
   const peakPoint: ScanPoint | null = useMemo(() => {
