@@ -20,7 +20,7 @@ DATA_DIR := data
 DOCKER_IMAGE := tinysa-coordinator
 DOCKER_TAG := latest
 
-.PHONY: help install install-backend install-frontend dev dev-backend dev-frontend build lint lint-backend lint-frontend clean docker-build docker-run docker-stop test
+.PHONY: help install install-backend install-frontend dev dev-backend dev-frontend build lint lint-backend lint-frontend clean docker-build docker-run docker-stop test test-e2e test-e2e-ui test-e2e-headed test-e2e-report
 
 ##@ General
 
@@ -115,6 +115,23 @@ test: ## Run all tests
 			echo "$(YELLOW)pytest not installed. Skipping backend tests.$(RESET)"; \
 		fi
 	@echo "$(GREEN)Tests complete!$(RESET)"
+
+test-e2e: ## Run Playwright E2E tests (all browsers)
+	@echo "$(CYAN)Running Playwright E2E tests...$(RESET)"
+	@cd $(FRONTEND_DIR) && npm run test:e2e
+	@echo "$(GREEN)E2E tests complete!$(RESET)"
+
+test-e2e-ui: ## Run Playwright E2E tests with interactive UI
+	@echo "$(CYAN)Starting Playwright UI mode...$(RESET)"
+	@cd $(FRONTEND_DIR) && npm run test:e2e:ui
+
+test-e2e-headed: ## Run Playwright E2E tests in headed mode (visible browser)
+	@echo "$(CYAN)Running E2E tests in headed mode...$(RESET)"
+	@cd $(FRONTEND_DIR) && npm run test:e2e:headed
+
+test-e2e-report: ## Show Playwright HTML test report
+	@echo "$(CYAN)Opening Playwright test report...$(RESET)"
+	@cd $(FRONTEND_DIR) && npm run test:e2e:report
 
 ##@ Docker
 

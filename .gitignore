@@ -51,6 +51,11 @@ frontend/dist/
 htmlcov/
 .pytest_cache/
 
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
+
 # Claude orchestrator state
 .claude/orchestrator/
 claude-progress.txt
