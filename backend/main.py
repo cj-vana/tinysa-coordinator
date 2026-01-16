@@ -10,8 +10,8 @@ import os
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import Dict
 from pathlib import Path
+from typing import Dict
 
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,6 +27,7 @@ from backend.api.routes.export import router as export_router
 from backend.api.routes.history import router as history_router
 from backend.api.routes.presets import router as presets_router
 from backend.api.websocket.scan_ws import scan_websocket
+from backend.config import get_settings
 from backend.core.connection_manager import get_connection_manager
 from backend.core.logging import setup_logging
 from backend.core.rate_limit import get_limiter, get_rate_limit_config
@@ -39,17 +40,8 @@ LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 LOG_FORMAT_JSON = os.environ.get("LOG_FORMAT", "text").lower() == "json"
 setup_logging(level=LOG_LEVEL, json_format=LOG_FORMAT_JSON)
 
-# CORS configuration
-# In production, set ALLOWED_ORIGINS to a comma-separated list of allowed origins
-# Example: ALLOWED_ORIGINS="https://myapp.example.com,https://api.example.com"
-# If not set, defaults to localhost origins for development
-DEFAULT_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]
-ALLOWED_ORIGINS_ENV = os.environ.get("ALLOWED_ORIGINS", "")
-ALLOWED_ORIGINS = (
-    [origin.strip() for origin in ALLOWED_ORIGINS_ENV.split(",") if origin.strip()]
-    if ALLOWED_ORIGINS_ENV
-    else DEFAULT_ORIGINS
-)
+# Get application settings (includes CORS configuration)
+settings = get_settings()
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +54,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager for startup/shutdown events."""
     # Startup
     logger.info("Starting TinySA Frequency Scanner API")
-    logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
+    logger.info(f"CORS allowed origins: {settings.cors_origins}")
     await init_db()
     logger.info("Database initialized")
 
@@ -108,10 +100,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Add request ID middleware for tracing
 app.add_middleware(RequestIDMiddleware)
 
-# Configure CORS - uses ALLOWED_ORIGINS environment variable in production
+# Configure CORS - uses settings.cors_origins from centralized config
+# Set ALLOWED_ORIGINS or CORS_ORIGINS env var in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
