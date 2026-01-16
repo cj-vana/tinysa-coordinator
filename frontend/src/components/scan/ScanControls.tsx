@@ -3,7 +3,7 @@
  * Provides inputs for frequency range, points, RBW, and preset selection.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { ScanConfig } from '../../hooks/useScanData';
 import { usePresets } from '../../hooks/usePresets';
 
@@ -34,7 +34,28 @@ export default function ScanControls({
   // Fetch presets from API using the usePresets hook
   const { data: presetsData } = usePresets();
 
-  const presets = presetsData?.items ?? [];
+  // Memoize presets to avoid dependency issues
+  const presets = useMemo(() => presetsData?.items ?? [], [presetsData?.items]);
+
+  // Compute the effective preset ID - checks if current values match the selected preset
+  const effectivePresetId = useMemo(() => {
+    if (selectedPresetId === null) return null;
+    const preset = presets.find((p) => p.id === selectedPresetId);
+    if (!preset) return null;
+    const presetStartMhz = hzToMhz(preset.start_freq_hz);
+    const presetStopMhz = hzToMhz(preset.stop_freq_hz);
+    const presetRbw = preset.rbw_khz ? String(preset.rbw_khz) : '';
+    // If values match the preset, keep the selection; otherwise, return null
+    if (
+      startFreqMhz === presetStartMhz &&
+      stopFreqMhz === presetStopMhz &&
+      points === preset.points &&
+      rbwKhz === presetRbw
+    ) {
+      return selectedPresetId;
+    }
+    return null;
+  }, [startFreqMhz, stopFreqMhz, points, rbwKhz, selectedPresetId, presets]);
 
   // Handle preset selection
   const handlePresetChange = useCallback(
@@ -55,26 +76,6 @@ export default function ScanControls({
     },
     [presets]
   );
-
-  // Clear preset selection when manual changes are made
-  useEffect(() => {
-    if (selectedPresetId !== null) {
-      const preset = presets.find((p) => p.id === selectedPresetId);
-      if (preset) {
-        const presetStartMhz = hzToMhz(preset.start_freq_hz);
-        const presetStopMhz = hzToMhz(preset.stop_freq_hz);
-        const presetRbw = preset.rbw_khz ? String(preset.rbw_khz) : '';
-        if (
-          startFreqMhz !== presetStartMhz ||
-          stopFreqMhz !== presetStopMhz ||
-          points !== preset.points ||
-          rbwKhz !== presetRbw
-        ) {
-          setSelectedPresetId(null);
-        }
-      }
-    }
-  }, [startFreqMhz, stopFreqMhz, points, rbwKhz, selectedPresetId, presets]);
 
   const handleStartScan = () => {
     const config: ScanConfig = {
@@ -115,7 +116,7 @@ export default function ScanControls({
           Preset
         </label>
         <select
-          value={selectedPresetId ?? ''}
+          value={effectivePresetId ?? ''}
           onChange={(e) => handlePresetChange(e.target.value)}
           disabled={isScanning}
           className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white

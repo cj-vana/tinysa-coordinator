@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   Preset,
   PresetCategory,
@@ -35,18 +35,38 @@ interface FormErrors {
 
 const CATEGORIES: PresetCategory[] = ['UHF', 'VHF', 'ISM', 'Custom']
 
-const initialFormData: FormData = {
-  name: '',
-  description: '',
-  start_freq_mhz: '',
-  stop_freq_mhz: '',
-  points: '450',
-  rbw_khz: '',
-  category: 'Custom',
+/**
+ * Get initial form data from preset or defaults
+ */
+function getInitialFormData(preset?: Preset | null): FormData {
+  if (preset) {
+    return {
+      name: preset.name,
+      description: preset.description || '',
+      start_freq_mhz: (preset.start_freq_hz / 1e6).toString(),
+      stop_freq_mhz: (preset.stop_freq_hz / 1e6).toString(),
+      points: preset.points.toString(),
+      rbw_khz: preset.rbw_khz?.toString() || '',
+      category: preset.category,
+    }
+  }
+  return {
+    name: '',
+    description: '',
+    start_freq_mhz: '',
+    stop_freq_mhz: '',
+    points: '450',
+    rbw_khz: '',
+    category: 'Custom',
+  }
 }
 
-export default function PresetForm({ preset, isOpen, onClose, onSuccess }: PresetFormProps) {
-  const [formData, setFormData] = useState<FormData>(initialFormData)
+/**
+ * Inner form component - uses key prop from parent to reset state
+ */
+function PresetFormInner({ preset, onClose, onSuccess }: Omit<PresetFormProps, 'isOpen'>) {
+  // Initialize state directly from props - parent uses key to force remount
+  const [formData, setFormData] = useState<FormData>(() => getInitialFormData(preset))
   const [errors, setErrors] = useState<FormErrors>({})
 
   const createMutation = useCreatePreset()
@@ -54,25 +74,6 @@ export default function PresetForm({ preset, isOpen, onClose, onSuccess }: Prese
 
   const isEditing = !!preset
   const isSubmitting = createMutation.isPending || updateMutation.isPending
-
-  useEffect(() => {
-    if (isOpen) {
-      if (preset) {
-        setFormData({
-          name: preset.name,
-          description: preset.description || '',
-          start_freq_mhz: (preset.start_freq_hz / 1e6).toString(),
-          stop_freq_mhz: (preset.stop_freq_hz / 1e6).toString(),
-          points: preset.points.toString(),
-          rbw_khz: preset.rbw_khz?.toString() || '',
-          category: preset.category,
-        })
-      } else {
-        setFormData(initialFormData)
-      }
-      setErrors({})
-    }
-  }, [isOpen, preset])
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {}
@@ -359,5 +360,23 @@ export default function PresetForm({ preset, isOpen, onClose, onSuccess }: Prese
         </form>
       </div>
     </div>
+  )
+}
+
+/**
+ * PresetForm wrapper - handles open/close and uses key prop to reset form state
+ */
+export default function PresetForm({ preset, isOpen, onClose, onSuccess }: PresetFormProps) {
+  if (!isOpen) return null
+
+  // Use preset?.id as key to force remount when editing different presets
+  // For new presets (no id), use 'new' as key
+  return (
+    <PresetFormInner
+      key={preset?.id ?? 'new'}
+      preset={preset}
+      onClose={onClose}
+      onSuccess={onSuccess}
+    />
   )
 }

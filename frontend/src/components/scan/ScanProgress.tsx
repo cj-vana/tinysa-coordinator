@@ -66,12 +66,12 @@ export default function ScanProgress({
             </span>
           </div>
         )}
-        {isScanning && totalPoints > 0 && (
+        {isScanning && scanDuration !== null && scanDuration > 0 && (
           <div>
             <span className="text-gray-400">Rate: </span>
             <span className="text-white font-medium">
               {currentPoints > 0
-                ? `~${Math.round((currentPoints / (progress / 100)) / (Date.now() - (Date.now() - 1000)) * 1000)} pts/s`
+                ? `~${Math.round((currentPoints / scanDuration) * 1000)} pts/s`
                 : '-'}
             </span>
           </div>
