@@ -11,6 +11,7 @@ import type {
   ScanPoint,
   ScanMessage,
   WebSocketStatus,
+  ReconnectionState,
 } from '../lib/websocket';
 
 export interface ScanConfig {
@@ -28,6 +29,7 @@ export interface ScanState {
   wsStatus: WebSocketStatus;
   error: string | null;
   scanDuration: number | null;
+  reconnectionState: ReconnectionState;
 }
 
 export interface UseScanDataReturn extends ScanState {
@@ -47,6 +49,11 @@ export function useScanData(wsUrl?: string): UseScanDataReturn {
   const [wsStatus, setWsStatus] = useState<WebSocketStatus>('disconnected');
   const [error, setError] = useState<string | null>(null);
   const [scanDuration, setScanDuration] = useState<number | null>(null);
+  const [reconnectionState, setReconnectionState] = useState<ReconnectionState>({
+    isReconnecting: false,
+    attempt: 0,
+    maxAttempts: 5,
+  });
 
   const wsRef = useRef<ScanWebSocket | null>(null);
 
@@ -103,10 +110,22 @@ export function useScanData(wsUrl?: string): UseScanDataReturn {
 
   useEffect(() => {
     const ws = new ScanWebSocket(wsUrl, {
-      onOpen: () => setWsStatus('connected'),
+      onOpen: () => {
+        setWsStatus('connected');
+        setReconnectionState({ isReconnecting: false, attempt: 0, maxAttempts: 5 });
+      },
       onClose: () => setWsStatus('disconnected'),
       onError: () => setWsStatus('error'),
       onMessage: handleMessage,
+      onReconnecting: (state) => {
+        setWsStatus('reconnecting');
+        setReconnectionState(state);
+      },
+      onReconnectFailed: () => {
+        setWsStatus('error');
+        setReconnectionState((prev) => ({ ...prev, isReconnecting: false }));
+        setError('Connection lost. Max reconnection attempts reached.');
+      },
     });
 
     wsRef.current = ws;
@@ -157,6 +176,7 @@ export function useScanData(wsUrl?: string): UseScanDataReturn {
     wsStatus,
     error,
     scanDuration,
+    reconnectionState,
     startScan,
     stopScan,
     clearData,

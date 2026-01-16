@@ -11,7 +11,7 @@ interface ScanControlsProps {
   onStartScan: (config: ScanConfig) => void;
   onStopScan: () => void;
   isScanning: boolean;
-  wsStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
+  wsStatus: 'connecting' | 'connected' | 'disconnected' | 'error' | 'reconnecting';
 }
 
 // Convert Hz to MHz for display
@@ -94,6 +94,7 @@ export default function ScanControls({
   const connectionStatusColor = {
     connected: 'bg-green-500',
     connecting: 'bg-yellow-500',
+    reconnecting: 'bg-yellow-500',
     disconnected: 'bg-red-500',
     error: 'bg-red-500',
   }[wsStatus];
