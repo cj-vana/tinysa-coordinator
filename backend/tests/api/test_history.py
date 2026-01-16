@@ -391,10 +391,7 @@ async def test_get_scan_not_found(client: AsyncClient):
 @pytest.mark.unit
 async def test_update_scan_name(client: AsyncClient, scan_in_db):
     """Test updating scan name."""
-    response = await client.put(
-        f"/api/history/{scan_in_db.id}",
-        json={"name": "Updated Scan Name"}
-    )
+    response = await client.put(f"/api/history/{scan_in_db.id}", json={"name": "Updated Scan Name"})
 
     assert response.status_code == 200
     data = response.json()
@@ -406,10 +403,7 @@ async def test_update_scan_name(client: AsyncClient, scan_in_db):
 @pytest.mark.unit
 async def test_update_scan_location(client: AsyncClient, scan_in_db):
     """Test updating scan location."""
-    response = await client.put(
-        f"/api/history/{scan_in_db.id}",
-        json={"location": "New Location"}
-    )
+    response = await client.put(f"/api/history/{scan_in_db.id}", json={"location": "New Location"})
 
     assert response.status_code == 200
     data = response.json()
@@ -420,10 +414,7 @@ async def test_update_scan_location(client: AsyncClient, scan_in_db):
 async def test_update_scan_notes(client: AsyncClient, scan_in_db):
     """Test updating scan notes."""
     new_notes = "These are updated notes with more detail."
-    response = await client.put(
-        f"/api/history/{scan_in_db.id}",
-        json={"notes": new_notes}
-    )
+    response = await client.put(f"/api/history/{scan_in_db.id}", json={"notes": new_notes})
 
     assert response.status_code == 200
     data = response.json()
@@ -433,10 +424,7 @@ async def test_update_scan_notes(client: AsyncClient, scan_in_db):
 @pytest.mark.unit
 async def test_update_scan_tags(client: AsyncClient, scan_in_db):
     """Test updating scan tags."""
-    response = await client.put(
-        f"/api/history/{scan_in_db.id}",
-        json={"tags": "updated,new,tags"}
-    )
+    response = await client.put(f"/api/history/{scan_in_db.id}", json={"tags": "updated,new,tags"})
 
     assert response.status_code == 200
     data = response.json()
@@ -453,7 +441,7 @@ async def test_update_scan_multiple_fields(client: AsyncClient, scan_in_db):
             "location": "Multi Update Location",
             "notes": "Multi update notes",
             "tags": "multi,update",
-        }
+        },
     )
 
     assert response.status_code == 200
@@ -468,10 +456,7 @@ async def test_update_scan_multiple_fields(client: AsyncClient, scan_in_db):
 async def test_update_scan_partial(client: AsyncClient, scan_in_db):
     """Test partial update doesn't affect other fields."""
     original_notes = scan_in_db.notes
-    response = await client.put(
-        f"/api/history/{scan_in_db.id}",
-        json={"name": "Only Name Changed"}
-    )
+    response = await client.put(f"/api/history/{scan_in_db.id}", json={"name": "Only Name Changed"})
 
     assert response.status_code == 200
     data = response.json()
@@ -482,10 +467,7 @@ async def test_update_scan_partial(client: AsyncClient, scan_in_db):
 @pytest.mark.unit
 async def test_update_scan_clear_optional_field(client: AsyncClient, scan_in_db):
     """Test clearing an optional field with null."""
-    response = await client.put(
-        f"/api/history/{scan_in_db.id}",
-        json={"notes": None}
-    )
+    response = await client.put(f"/api/history/{scan_in_db.id}", json={"notes": None})
 
     assert response.status_code == 200
     data = response.json()
@@ -495,10 +477,7 @@ async def test_update_scan_clear_optional_field(client: AsyncClient, scan_in_db)
 @pytest.mark.unit
 async def test_update_scan_not_found(client: AsyncClient):
     """Test updating a non-existent scan returns 404."""
-    response = await client.put(
-        "/api/history/99999",
-        json={"name": "New Name"}
-    )
+    response = await client.put("/api/history/99999", json={"name": "New Name"})
 
     assert response.status_code == 404
 
@@ -506,10 +485,7 @@ async def test_update_scan_not_found(client: AsyncClient):
 @pytest.mark.unit
 async def test_update_scan_empty_body(client: AsyncClient, scan_in_db):
     """Test update with empty body returns current data."""
-    response = await client.put(
-        f"/api/history/{scan_in_db.id}",
-        json={}
-    )
+    response = await client.put(f"/api/history/{scan_in_db.id}", json={})
 
     assert response.status_code == 200
     data = response.json()
@@ -520,17 +496,11 @@ async def test_update_scan_empty_body(client: AsyncClient, scan_in_db):
 async def test_update_scan_validates_name_length(client: AsyncClient, scan_in_db):
     """Test name validation on update."""
     # Empty name should fail
-    response = await client.put(
-        f"/api/history/{scan_in_db.id}",
-        json={"name": ""}
-    )
+    response = await client.put(f"/api/history/{scan_in_db.id}", json={"name": ""})
     assert response.status_code == 422
 
     # Name too long should fail
-    response = await client.put(
-        f"/api/history/{scan_in_db.id}",
-        json={"name": "x" * 250}
-    )
+    response = await client.put(f"/api/history/{scan_in_db.id}", json={"name": "x" * 250})
     assert response.status_code == 422
 
 
@@ -553,14 +523,13 @@ async def test_delete_scan_success(client: AsyncClient, scan_in_db):
 
 
 @pytest.mark.unit
-async def test_delete_scan_removes_data_points(
-    client: AsyncClient, scan_in_db, test_session
-):
+async def test_delete_scan_removes_data_points(client: AsyncClient, scan_in_db, test_session):
     """Test deleting a scan also removes its data points."""
     scan_id = scan_in_db.id
 
     # Verify data points exist before delete
     from sqlalchemy import func, select
+
     count_query = select(func.count()).where(ScanDataPoint.scan_id == scan_id)
     result = await test_session.execute(count_query)
     initial_count = result.scalar()
@@ -616,8 +585,7 @@ async def test_full_scan_lifecycle(client: AsyncClient, minimal_scan_payload):
 
     # 3. Update
     update_response = await client.put(
-        f"/api/history/{scan_id}",
-        json={"name": "Updated Name", "location": "New Location"}
+        f"/api/history/{scan_id}", json={"name": "Updated Name", "location": "New Location"}
     )
     assert update_response.status_code == 200
     assert update_response.json()["name"] == "Updated Name"

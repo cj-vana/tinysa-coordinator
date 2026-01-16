@@ -401,9 +401,7 @@ async def test_create_preset_negative_rbw(client: AsyncClient):
 
 
 @pytest.mark.unit
-async def test_get_preset_by_id(
-    client: AsyncClient, user_preset_in_db: FrequencyPreset
-):
+async def test_get_preset_by_id(client: AsyncClient, user_preset_in_db: FrequencyPreset):
     """Test getting a preset by valid ID returns the preset."""
     response = await client.get(f"/api/presets/{user_preset_in_db.id}")
 
@@ -427,9 +425,7 @@ async def test_get_preset_not_found(client: AsyncClient):
 
 
 @pytest.mark.unit
-async def test_get_builtin_preset(
-    client: AsyncClient, builtin_preset_in_db: FrequencyPreset
-):
+async def test_get_builtin_preset(client: AsyncClient, builtin_preset_in_db: FrequencyPreset):
     """Test that built-in presets can be retrieved."""
     response = await client.get(f"/api/presets/{builtin_preset_in_db.id}")
 
@@ -446,9 +442,7 @@ async def test_get_builtin_preset(
 
 
 @pytest.mark.unit
-async def test_update_preset_full(
-    client: AsyncClient, user_preset_in_db: FrequencyPreset
-):
+async def test_update_preset_full(client: AsyncClient, user_preset_in_db: FrequencyPreset):
     """Test updating all fields of a user preset."""
     update_data = {
         "name": "Updated Name",
@@ -460,9 +454,7 @@ async def test_update_preset_full(
         "category": "VHF",
     }
 
-    response = await client.put(
-        f"/api/presets/{user_preset_in_db.id}", json=update_data
-    )
+    response = await client.put(f"/api/presets/{user_preset_in_db.id}", json=update_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -478,15 +470,11 @@ async def test_update_preset_full(
 
 
 @pytest.mark.unit
-async def test_update_preset_partial(
-    client: AsyncClient, user_preset_in_db: FrequencyPreset
-):
+async def test_update_preset_partial(client: AsyncClient, user_preset_in_db: FrequencyPreset):
     """Test partially updating a preset (only some fields)."""
     update_data = {"name": "Only Name Updated"}
 
-    response = await client.put(
-        f"/api/presets/{user_preset_in_db.id}", json=update_data
-    )
+    response = await client.put(f"/api/presets/{user_preset_in_db.id}", json=update_data)
 
     assert response.status_code == 200
     data = response.json()
@@ -525,9 +513,7 @@ async def test_update_builtin_preset_forbidden(
 
 
 @pytest.mark.unit
-async def test_update_preset_invalid_name(
-    client: AsyncClient, user_preset_in_db: FrequencyPreset
-):
+async def test_update_preset_invalid_name(client: AsyncClient, user_preset_in_db: FrequencyPreset):
     """Test updating preset with invalid name returns 422."""
     response = await client.put(
         f"/api/presets/{user_preset_in_db.id}",
@@ -601,9 +587,7 @@ async def test_delete_builtin_preset_forbidden(
 
 
 @pytest.mark.unit
-async def test_create_then_get_preset(
-    client: AsyncClient, valid_preset_data: dict[str, Any]
-):
+async def test_create_then_get_preset(client: AsyncClient, valid_preset_data: dict[str, Any]):
     """Test creating a preset and then retrieving it by ID."""
     # Create
     create_response = await client.post("/api/presets/", json=valid_preset_data)
@@ -643,9 +627,7 @@ async def test_create_update_then_get_preset(
 
 
 @pytest.mark.unit
-async def test_create_then_delete_preset(
-    client: AsyncClient, valid_preset_data: dict[str, Any]
-):
+async def test_create_then_delete_preset(client: AsyncClient, valid_preset_data: dict[str, Any]):
     """Test creating a preset and then deleting it."""
     # Create
     create_response = await client.post("/api/presets/", json=valid_preset_data)
@@ -666,9 +648,7 @@ async def test_create_then_delete_preset(
 
 
 @pytest.mark.unit
-async def test_list_after_create(
-    client: AsyncClient, valid_preset_data: dict[str, Any]
-):
+async def test_list_after_create(client: AsyncClient, valid_preset_data: dict[str, Any]):
     """Test that newly created presets appear in list."""
     # Initially empty
     initial_response = await client.get("/api/presets/")
@@ -684,9 +664,7 @@ async def test_list_after_create(
 
 
 @pytest.mark.unit
-async def test_list_after_delete(
-    client: AsyncClient, user_preset_in_db: FrequencyPreset
-):
+async def test_list_after_delete(client: AsyncClient, user_preset_in_db: FrequencyPreset):
     """Test that deleted presets no longer appear in list."""
     # Initial count with preset
     initial_response = await client.get("/api/presets/")
@@ -703,9 +681,7 @@ async def test_list_after_delete(
 
 
 @pytest.mark.unit
-async def test_preset_timestamps_updated(
-    client: AsyncClient, user_preset_in_db: FrequencyPreset
-):
+async def test_preset_timestamps_updated(client: AsyncClient, user_preset_in_db: FrequencyPreset):
     """Test that updated_at timestamp changes on update."""
     # Get original timestamp
     get_response = await client.get(f"/api/presets/{user_preset_in_db.id}")

@@ -68,10 +68,7 @@ class DeviceService:
             product = (port.get("product") or "").lower()
             manufacturer = (port.get("manufacturer") or "").lower()
 
-            if any(
-                indicator in description
-                for indicator in ["tinysa", "nanovna", "stm32"]
-            ):
+            if any(indicator in description for indicator in ["tinysa", "nanovna", "stm32"]):
                 is_tinysa = True
             elif any(indicator in product for indicator in ["tinysa", "nanovna"]):
                 is_tinysa = True

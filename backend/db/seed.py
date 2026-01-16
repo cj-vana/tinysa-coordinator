@@ -129,8 +129,6 @@ async def get_builtin_preset_count(session: AsyncSession) -> int:
     from sqlalchemy import func
 
     result = await session.execute(
-        select(func.count())
-        .select_from(FrequencyPreset)
-        .where(FrequencyPreset.is_builtin == True)  # noqa: E712
+        select(func.count()).select_from(FrequencyPreset).where(FrequencyPreset.is_builtin == True)  # noqa: E712
     )
     return result.scalar() or 0

@@ -56,9 +56,7 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 
         # Log request start
         start_time = time.perf_counter()
-        logger.info(
-            f"Request started: {request.method} {request.url.path}"
-        )
+        logger.info(f"Request started: {request.method} {request.url.path}")
 
         try:
             # Process the request
@@ -185,9 +183,7 @@ async def tinysa_error_handler(request: Request, exc: TinySAError) -> JSONRespon
     )
 
 
-async def http_exception_handler(
-    request: Request, exc: StarletteHTTPException
-) -> JSONResponse:
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     """Handle standard HTTP exceptions.
 
     Converts FastAPI/Starlette HTTPException to RFC 7807 format.

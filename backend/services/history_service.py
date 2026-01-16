@@ -174,7 +174,9 @@ async def create_scan(
 
     await session.flush()
 
-    logger.info(f"Saved scan: id={scan.id}, name={scan.name}, data_points={len(scan_data.data_points)}")
+    logger.info(
+        f"Saved scan: id={scan.id}, name={scan.name}, data_points={len(scan_data.data_points)}"
+    )
 
     # Reload with data points
     return await get_scan_by_id(session, scan.id, include_data_points=True)

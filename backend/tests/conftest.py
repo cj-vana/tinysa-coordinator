@@ -138,18 +138,20 @@ def mock_tinysa() -> MagicMock:
     mock.disconnect = AsyncMock(side_effect=mock_disconnect)
 
     # Configure list_ports
-    mock.list_ports = MagicMock(return_value=[
-        {
-            "port": "/dev/cu.usbmodem4001",
-            "description": "TinySA ULTRA",
-            "hwid": "USB VID:PID=0483:5740",
-            "manufacturer": "STMicroelectronics",
-            "product": "TinySA ULTRA",
-            "serial_number": "12345",
-            "vid": 0x0483,
-            "pid": 0x5740,
-        },
-    ])
+    mock.list_ports = MagicMock(
+        return_value=[
+            {
+                "port": "/dev/cu.usbmodem4001",
+                "description": "TinySA ULTRA",
+                "hwid": "USB VID:PID=0483:5740",
+                "manufacturer": "STMicroelectronics",
+                "product": "TinySA ULTRA",
+                "serial_number": "12345",
+                "vid": 0x0483,
+                "pid": 0x5740,
+            },
+        ]
+    )
 
     # Configure set_rbw
     mock.set_rbw = AsyncMock()
@@ -209,7 +211,7 @@ def sample_preset_data() -> dict[str, Any]:
         "name": "Test UHF Band",
         "description": "Test preset for UHF frequencies",
         "start_freq_hz": 470_000_000,  # 470 MHz
-        "stop_freq_hz": 698_000_000,   # 698 MHz
+        "stop_freq_hz": 698_000_000,  # 698 MHz
         "points": 450,
         "rbw_khz": 100.0,
         "category": "UHF",
@@ -242,11 +244,13 @@ def sample_scan_points() -> list[dict[str, Any]]:
     freq_step = (stop_hz - start_hz) / (num_points - 1)
 
     for i in range(num_points):
-        points.append({
-            "index": i,
-            "frequency_hz": int(start_hz + (i * freq_step)),
-            "amplitude_dbm": -100.0 + (i % 20) * 0.5,
-        })
+        points.append(
+            {
+                "index": i,
+                "frequency_hz": int(start_hz + (i * freq_step)),
+                "amplitude_dbm": -100.0 + (i % 20) * 0.5,
+            }
+        )
 
     return points
 

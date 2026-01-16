@@ -81,10 +81,7 @@ async def test_connect_device(client: AsyncClient, mock_device_service):
         "backend.api.routes.device.get_device_service",
         return_value=mock_device_service,
     ):
-        response = await client.post(
-            "/api/device/connect",
-            json={"port": "/dev/cu.usbmodem4001"}
-        )
+        response = await client.post("/api/device/connect", json={"port": "/dev/cu.usbmodem4001"})
 
     assert response.status_code == 200
     data = response.json()
@@ -94,18 +91,13 @@ async def test_connect_device(client: AsyncClient, mock_device_service):
 
 
 @pytest.mark.unit
-async def test_connect_device_already_connected(
-    client: AsyncClient, mock_device_service_connected
-):
+async def test_connect_device_already_connected(client: AsyncClient, mock_device_service_connected):
     """Test connecting when already connected returns conflict error."""
     with patch(
         "backend.api.routes.device.get_device_service",
         return_value=mock_device_service_connected,
     ):
-        response = await client.post(
-            "/api/device/connect",
-            json={"port": "/dev/cu.usbmodem4002"}
-        )
+        response = await client.post("/api/device/connect", json={"port": "/dev/cu.usbmodem4002"})
 
     assert response.status_code == 409
     data = response.json()

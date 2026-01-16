@@ -55,11 +55,7 @@ class Settings(BaseSettings):
         # Check for ALLOWED_ORIGINS env var (backward compatibility)
         allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "")
         if allowed_origins_env:
-            return [
-                origin.strip()
-                for origin in allowed_origins_env.split(",")
-                if origin.strip()
-            ]
+            return [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
 
         # Handle standard CORS_ORIGINS value
         if isinstance(v, str):

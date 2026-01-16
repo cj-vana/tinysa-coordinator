@@ -143,7 +143,9 @@ def format_raw_csv(scan: SavedScan) -> str:
     # Data rows
     for point in scan.data_points:
         freq_mhz = point.frequency_hz / 1_000_000
-        output.write(f"{point.index},{point.frequency_hz},{freq_mhz:.6f},{point.amplitude_dbm:.1f}\n")
+        output.write(
+            f"{point.index},{point.frequency_hz},{freq_mhz:.6f},{point.amplitude_dbm:.1f}\n"
+        )
 
     result = output.getvalue()
     logger.info(
@@ -180,8 +182,12 @@ def format_json_export(scan: SavedScan) -> str:
                 "preset_name": scan.preset_name,
             },
             "timing": {
-                "scan_started_at": scan.scan_started_at.isoformat() if scan.scan_started_at else None,
-                "scan_completed_at": scan.scan_completed_at.isoformat() if scan.scan_completed_at else None,
+                "scan_started_at": scan.scan_started_at.isoformat()
+                if scan.scan_started_at
+                else None,
+                "scan_completed_at": scan.scan_completed_at.isoformat()
+                if scan.scan_completed_at
+                else None,
                 "created_at": scan.created_at.isoformat(),
                 "duration_seconds": scan.duration_seconds,
             },

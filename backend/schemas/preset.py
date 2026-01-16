@@ -24,21 +24,13 @@ class FrequencyPresetBase(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=100, description="Preset name")
     description: str | None = Field(None, description="Optional description")
-    start_freq_hz: int = Field(
-        ..., gt=0, description="Start frequency in Hz (must be positive)"
-    )
+    start_freq_hz: int = Field(..., gt=0, description="Start frequency in Hz (must be positive)")
     stop_freq_hz: int = Field(
         ..., gt=0, description="Stop frequency in Hz (must be greater than start)"
     )
-    points: int = Field(
-        default=450, ge=10, le=10000, description="Number of scan points"
-    )
-    rbw_khz: float | None = Field(
-        None, gt=0, description="Resolution bandwidth in kHz"
-    )
-    category: PresetCategory = Field(
-        default=PresetCategory.CUSTOM, description="Preset category"
-    )
+    points: int = Field(default=450, ge=10, le=10000, description="Number of scan points")
+    rbw_khz: float | None = Field(None, gt=0, description="Resolution bandwidth in kHz")
+    category: PresetCategory = Field(default=PresetCategory.CUSTOM, description="Preset category")
 
     @field_validator("stop_freq_hz")
     @classmethod

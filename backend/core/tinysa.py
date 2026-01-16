@@ -94,16 +94,18 @@ class TinySA:
         logger.debug("Enumerating serial ports")
         ports = []
         for port_info in serial.tools.list_ports.comports():
-            ports.append({
-                "port": port_info.device,
-                "description": port_info.description or "",
-                "hwid": port_info.hwid or "",
-                "manufacturer": port_info.manufacturer,
-                "product": port_info.product,
-                "serial_number": port_info.serial_number,
-                "vid": port_info.vid,
-                "pid": port_info.pid,
-            })
+            ports.append(
+                {
+                    "port": port_info.device,
+                    "description": port_info.description or "",
+                    "hwid": port_info.hwid or "",
+                    "manufacturer": port_info.manufacturer,
+                    "product": port_info.product,
+                    "serial_number": port_info.serial_number,
+                    "vid": port_info.vid,
+                    "pid": port_info.pid,
+                }
+            )
         logger.debug(f"Found {len(ports)} serial ports")
         return ports
 
@@ -226,7 +228,7 @@ class TinySA:
             TinySACommandError: If scan fails or returns invalid data
         """
         logger.info(
-            f"Starting raw scan: {start_hz/1e6:.3f}-{stop_hz/1e6:.3f} MHz, {points} points"
+            f"Starting raw scan: {start_hz / 1e6:.3f}-{stop_hz / 1e6:.3f} MHz, {points} points"
         )
         async with self._lock:
             self._check_connected()
@@ -352,9 +354,7 @@ class TinySA:
         if not self.is_connected:
             raise TinySAConnectionError("Not connected to TinySA device")
 
-    def _parse_device_info(
-        self, version_response: str, info_response: str
-    ) -> dict[str, Any]:
+    def _parse_device_info(self, version_response: str, info_response: str) -> dict[str, Any]:
         """Parse version and info responses into device info dict.
 
         Args:

@@ -55,7 +55,7 @@ class FrequencyPreset(Base):
     def __repr__(self) -> str:
         return (
             f"<FrequencyPreset(id={self.id}, name='{self.name}', "
-            f"range={self.start_freq_hz/1e6:.3f}-{self.stop_freq_hz/1e6:.3f} MHz)>"
+            f"range={self.start_freq_hz / 1e6:.3f}-{self.stop_freq_hz / 1e6:.3f} MHz)>"
         )
 
 
@@ -91,9 +91,7 @@ class SavedScan(Base):
     # Metadata
     location: Mapped[str | None] = mapped_column(String(200), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    tags: Mapped[str | None] = mapped_column(
-        String(500), nullable=True
-    )  # Comma-separated tags
+    tags: Mapped[str | None] = mapped_column(String(500), nullable=True)  # Comma-separated tags
 
     # Timing
     scan_started_at: Mapped[datetime | None] = mapped_column(nullable=True)
@@ -115,7 +113,7 @@ class SavedScan(Base):
     def __repr__(self) -> str:
         return (
             f"<SavedScan(id={self.id}, name='{self.name}', "
-            f"range={self.start_freq_hz/1e6:.3f}-{self.stop_freq_hz/1e6:.3f} MHz, "
+            f"range={self.start_freq_hz / 1e6:.3f}-{self.stop_freq_hz / 1e6:.3f} MHz, "
             f"points={len(self.data_points) if self.data_points else 0})>"
         )
 
@@ -166,6 +164,6 @@ class ScanDataPoint(Base):
     def __repr__(self) -> str:
         return (
             f"<ScanDataPoint(id={self.id}, scan_id={self.scan_id}, "
-            f"idx={self.index}, freq={self.frequency_hz/1e6:.3f} MHz, "
+            f"idx={self.index}, freq={self.frequency_hz / 1e6:.3f} MHz, "
             f"amp={self.amplitude_dbm:.1f} dBm)>"
         )

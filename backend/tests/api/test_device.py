@@ -44,9 +44,7 @@ def mock_device_service_disconnect_error(mock_tinysa_connected) -> DeviceService
     """Create a DeviceService where disconnect fails."""
     from backend.core.tinysa import TinySAError
 
-    mock_tinysa_connected.disconnect = AsyncMock(
-        side_effect=TinySAError("Error during disconnect")
-    )
+    mock_tinysa_connected.disconnect = AsyncMock(side_effect=TinySAError("Error during disconnect"))
     return DeviceService(tinysa=mock_tinysa_connected)
 
 
@@ -306,9 +304,7 @@ class TestConnectDevice:
             "backend.api.routes.device.get_device_service",
             return_value=mock_device_service_connection_error,
         ):
-            response = await client.post(
-                "/api/device/connect", json={"port": "/dev/test"}
-            )
+            response = await client.post("/api/device/connect", json={"port": "/dev/test"})
 
         assert response.status_code == 400
         data = response.json()
@@ -482,9 +478,7 @@ class TestDeviceWorkflow:
     """Tests for complete device workflow scenarios."""
 
     @pytest.mark.unit
-    async def test_connect_then_status_shows_connected(
-        self, client: AsyncClient, mock_tinysa
-    ):
+    async def test_connect_then_status_shows_connected(self, client: AsyncClient, mock_tinysa):
         """Test that status reflects connection state after connect."""
         service = DeviceService(tinysa=mock_tinysa)
 

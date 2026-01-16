@@ -14,9 +14,7 @@ class ScanDataPointBase(BaseModel):
 
     index: int = Field(..., ge=0, description="Point index (0-based)")
     frequency_hz: int = Field(..., gt=0, description="Frequency in Hz")
-    amplitude_dbm: float = Field(
-        ..., ge=-200, le=50, description="Signal amplitude in dBm"
-    )
+    amplitude_dbm: float = Field(..., ge=-200, le=50, description="Signal amplitude in dBm")
 
 
 class ScanDataPointCreate(ScanDataPointBase):
@@ -41,14 +39,10 @@ class SavedScanBase(BaseModel):
     start_freq_hz: int = Field(..., gt=0, description="Start frequency in Hz")
     stop_freq_hz: int = Field(..., gt=0, description="Stop frequency in Hz")
     points: int = Field(..., ge=10, le=10000, description="Number of data points")
-    rbw_khz: float | None = Field(
-        None, gt=0, description="Resolution bandwidth in kHz"
-    )
+    rbw_khz: float | None = Field(None, gt=0, description="Resolution bandwidth in kHz")
     location: str | None = Field(None, max_length=200, description="Scan location")
     notes: str | None = Field(None, description="Additional notes")
-    tags: str | None = Field(
-        None, max_length=500, description="Comma-separated tags"
-    )
+    tags: str | None = Field(None, max_length=500, description="Comma-separated tags")
 
     @field_validator("stop_freq_hz")
     @classmethod
@@ -63,18 +57,10 @@ class SavedScanBase(BaseModel):
 class SavedScanCreate(SavedScanBase):
     """Schema for creating a new scan with data points."""
 
-    preset_id: int | None = Field(
-        None, description="ID of the preset used (if any)"
-    )
-    preset_name: str | None = Field(
-        None, max_length=100, description="Snapshot of preset name"
-    )
-    scan_started_at: datetime | None = Field(
-        None, description="When the scan started"
-    )
-    scan_completed_at: datetime | None = Field(
-        None, description="When the scan completed"
-    )
+    preset_id: int | None = Field(None, description="ID of the preset used (if any)")
+    preset_name: str | None = Field(None, max_length=100, description="Snapshot of preset name")
+    scan_started_at: datetime | None = Field(None, description="When the scan started")
+    scan_completed_at: datetime | None = Field(None, description="When the scan completed")
     data_points: list[ScanDataPointCreate] = Field(
         ..., min_length=1, description="Scan data points"
     )
@@ -100,9 +86,7 @@ class SavedScanResponse(SavedScanBase):
     scan_started_at: datetime | None = None
     scan_completed_at: datetime | None = None
     created_at: datetime
-    data_point_count: int = Field(
-        default=0, description="Number of data points in this scan"
-    )
+    data_point_count: int = Field(default=0, description="Number of data points in this scan")
 
     @classmethod
     def from_orm_with_count(cls, scan, count: int) -> "SavedScanResponse":

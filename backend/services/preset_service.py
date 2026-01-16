@@ -30,9 +30,7 @@ class PresetService:
         """
         logger.debug("Fetching all presets")
         result = await self.session.execute(
-            select(FrequencyPreset).order_by(
-                FrequencyPreset.category, FrequencyPreset.name
-            )
+            select(FrequencyPreset).order_by(FrequencyPreset.category, FrequencyPreset.name)
         )
         presets = list(result.scalars().all())
         logger.debug(f"Retrieved {len(presets)} presets")
@@ -178,9 +176,7 @@ class PresetService:
         """
         from sqlalchemy import func
 
-        result = await self.session.execute(
-            select(func.count()).select_from(FrequencyPreset)
-        )
+        result = await self.session.execute(select(func.count()).select_from(FrequencyPreset))
         count = result.scalar() or 0
         logger.debug(f"Total preset count: {count}")
         return count
