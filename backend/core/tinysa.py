@@ -232,6 +232,7 @@ class TinySA:
         )
         async with self._lock:
             self._check_connected()
+            assert self._serial is not None  # Guaranteed by _check_connected
 
             # Send scanraw command
             cmd = f"scanraw {start_hz} {stop_hz} {points}\r\n"
@@ -308,6 +309,7 @@ class TinySA:
             TinySACommandError: If command fails
         """
         self._check_connected()
+        assert self._serial is not None  # Guaranteed by _check_connected
 
         # Send command
         cmd_bytes = f"{command}\r\n".encode()
@@ -324,6 +326,7 @@ class TinySA:
         Returns:
             Response string (without the prompt)
         """
+        assert self._serial is not None  # Caller must ensure connection
         buffer = b""
         timeout_count = 0
         max_timeouts = 50  # 5 seconds max
@@ -337,7 +340,7 @@ class TinySA:
             else:
                 timeout_count += 1
                 if timeout_count > max_timeouts:
-                    logger.warning(f"Timeout reading response, got: {buffer}")
+                    logger.warning(f"Timeout reading response, got: {buffer!r}")
                     break
 
         # Remove the prompt and decode

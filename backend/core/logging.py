@@ -141,6 +141,7 @@ def setup_logging(
     log_level = getattr(logging, level.upper(), logging.INFO)
 
     # Create the appropriate formatter
+    formatter: logging.Formatter
     if json_format:
         formatter = JSONFormatter()
     else:

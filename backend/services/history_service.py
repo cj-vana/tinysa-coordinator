@@ -179,7 +179,9 @@ async def create_scan(
     )
 
     # Reload with data points
-    return await get_scan_by_id(session, scan.id, include_data_points=True)
+    reloaded = await get_scan_by_id(session, scan.id, include_data_points=True)
+    assert reloaded is not None  # We just created this scan
+    return reloaded
 
 
 async def update_scan(

@@ -8,6 +8,7 @@ Endpoints:
 - GET /api/export/{scan_id}/json - Full JSON export
 """
 
+from collections.abc import Awaitable, Callable
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Request
@@ -196,7 +197,8 @@ async def export_generic(
     - json: Full JSON export
     """
     # Route to appropriate handler
-    handlers = {
+    ExportHandler = Callable[[Request, int, AsyncSession], Awaitable[StreamingResponse]]
+    handlers: dict[str, ExportHandler] = {
         "wwb": export_wwb,
         "wsm": export_wsm,
         "raw": export_raw,

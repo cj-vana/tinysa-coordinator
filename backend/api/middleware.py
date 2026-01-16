@@ -9,7 +9,7 @@ Provides:
 import logging
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from fastapi import FastAPI, status
@@ -41,7 +41,9 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     4. Logs request start and completion with timing
     """
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """Process the request and add request ID tracking."""
         # Get or generate request ID
         request_id = request.headers.get("X-Request-ID")
@@ -332,19 +334,19 @@ def register_exception_handlers(app: FastAPI) -> None:
         app: The FastAPI application instance
     """
     # Custom application exceptions
-    app.add_exception_handler(AppException, app_exception_handler)
+    app.add_exception_handler(AppException, app_exception_handler)  # type: ignore[arg-type]
 
     # TinySA-specific exceptions from the core module
-    app.add_exception_handler(TinySAError, tinysa_error_handler)
+    app.add_exception_handler(TinySAError, tinysa_error_handler)  # type: ignore[arg-type]
 
     # Standard HTTP exceptions
-    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+    app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore[arg-type]
 
     # Request validation errors (from path/query/body validation)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
 
     # Pydantic validation errors (from manual model instantiation)
-    app.add_exception_handler(PydanticValidationError, pydantic_validation_handler)
+    app.add_exception_handler(PydanticValidationError, pydantic_validation_handler)  # type: ignore[arg-type]
 
     # Generic catch-all for unexpected errors
     app.add_exception_handler(Exception, generic_exception_handler)

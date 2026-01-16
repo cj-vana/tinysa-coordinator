@@ -8,6 +8,7 @@ Run with:
 import logging
 import os
 import time
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -49,7 +50,7 @@ STATIC_DIR = Path(__file__).parent.parent / "static"
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager for startup/shutdown events."""
     # Startup
     logger.info("Starting TinySA Frequency Scanner API")
@@ -94,7 +95,7 @@ app.state.limiter = limiter
 register_exception_handlers(app)
 
 # Register rate limit exception handler
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # Add request ID middleware for tracing
 app.add_middleware(RequestIDMiddleware)
@@ -175,7 +176,7 @@ async def _check_database_health() -> ComponentHealth:
 
 
 @app.websocket("/ws/scan")
-async def websocket_scan_endpoint(websocket: WebSocket):
+async def websocket_scan_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for real-time scan data streaming."""
     await scan_websocket(websocket)
 
@@ -187,7 +188,7 @@ if STATIC_DIR.exists():
 
     # Serve index.html for all non-API routes (SPA fallback)
     @app.get("/{path:path}")
-    async def serve_spa(path: str):
+    async def serve_spa(path: str) -> FileResponse:
         """Serve the SPA frontend for all non-API routes."""
         # Check if the file exists in static directory
         file_path = STATIC_DIR / path

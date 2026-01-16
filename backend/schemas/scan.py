@@ -4,9 +4,15 @@ Pydantic schemas for SavedScan and ScanDataPoint API serialization.
 These models handle request/response validation for scan-related endpoints.
 """
 
-from datetime import datetime
+from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
+
+if TYPE_CHECKING:
+    from backend.db.models import SavedScan
 
 
 class ScanDataPointBase(BaseModel):
@@ -46,7 +52,7 @@ class SavedScanBase(BaseModel):
 
     @field_validator("stop_freq_hz")
     @classmethod
-    def stop_must_be_greater_than_start(cls, v: int, info) -> int:
+    def stop_must_be_greater_than_start(cls, v: int, info: ValidationInfo) -> int:
         """Ensure stop frequency is greater than start frequency."""
         start = info.data.get("start_freq_hz")
         if start is not None and v <= start:
@@ -89,7 +95,7 @@ class SavedScanResponse(SavedScanBase):
     data_point_count: int = Field(default=0, description="Number of data points in this scan")
 
     @classmethod
-    def from_orm_with_count(cls, scan, count: int) -> "SavedScanResponse":
+    def from_orm_with_count(cls, scan: SavedScan, count: int) -> SavedScanResponse:
         """Create response from ORM model with explicit point count."""
         return cls(
             id=scan.id,

@@ -7,7 +7,7 @@ These models handle request/response validation for the preset endpoints.
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 
 class PresetCategory(str, Enum):
@@ -34,7 +34,7 @@ class FrequencyPresetBase(BaseModel):
 
     @field_validator("stop_freq_hz")
     @classmethod
-    def stop_must_be_greater_than_start(cls, v: int, info) -> int:
+    def stop_must_be_greater_than_start(cls, v: int, info: ValidationInfo) -> int:
         """Ensure stop frequency is greater than start frequency."""
         start = info.data.get("start_freq_hz")
         if start is not None and v <= start:

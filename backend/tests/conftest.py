@@ -172,7 +172,7 @@ def mock_tinysa() -> MagicMock:
 
 
 @pytest.fixture
-def mock_tinysa_connected(mock_tinysa) -> MagicMock:
+def mock_tinysa_connected(mock_tinysa: MagicMock) -> MagicMock:
     """Create a mock TinySA device that is already connected."""
     mock_tinysa.is_connected = True
     mock_tinysa.port = "/dev/cu.usbmodem4001"
