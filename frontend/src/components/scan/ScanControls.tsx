@@ -4,18 +4,8 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import type { ScanConfig } from '../../hooks/useScanData';
-
-interface Preset {
-  id: number;
-  name: string;
-  category: string;
-  start_freq_hz: number;
-  stop_freq_hz: number;
-  points: number;
-  rbw_khz: number | null;
-}
+import { usePresets } from '../../hooks/usePresets';
 
 interface ScanControlsProps {
   onStartScan: (config: ScanConfig) => void;
@@ -41,16 +31,8 @@ export default function ScanControls({
   const [rbwKhz, setRbwKhz] = useState<string>('');
   const [selectedPresetId, setSelectedPresetId] = useState<number | null>(null);
 
-  // Fetch presets from API
-  const { data: presetsData } = useQuery<{ items: Preset[] }>({
-    queryKey: ['presets'],
-    queryFn: async () => {
-      const response = await fetch('http://localhost:8000/api/presets');
-      if (!response.ok) throw new Error('Failed to fetch presets');
-      return response.json();
-    },
-    staleTime: 60000,
-  });
+  // Fetch presets from API using the usePresets hook
+  const { data: presetsData } = usePresets();
 
   const presets = presetsData?.items ?? [];
 
