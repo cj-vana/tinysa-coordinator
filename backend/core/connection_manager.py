@@ -6,10 +6,12 @@ broadcasting messages to connected clients.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
 from fastapi import WebSocket
+from starlette.websockets import WebSocketState
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +99,55 @@ class ConnectionManager:
             self.disconnect(conn)
 
         return success_count
+
+    async def graceful_shutdown(self, reason: str = "Server shutting down") -> None:
+        """Gracefully close all WebSocket connections with a shutdown notification.
+
+        Sends a server_shutdown message to all connected clients before closing
+        connections. This allows clients to handle the shutdown gracefully
+        (e.g., disable auto-reconnect).
+
+        Args:
+            reason: Human-readable reason for the shutdown
+        """
+        if not self._active_connections:
+            logger.info("No active WebSocket connections to close")
+            return
+
+        logger.info(f"Initiating graceful shutdown for {self.connection_count} WebSocket connections")
+
+        # Send shutdown notification to all clients
+        shutdown_message = {
+            "type": "server_shutdown",
+            "reason": reason,
+        }
+
+        # Send shutdown message to all connections concurrently
+        async def notify_and_close(ws: WebSocket) -> None:
+            try:
+                # Only send if the connection is still open
+                if ws.client_state == WebSocketState.CONNECTED:
+                    await ws.send_json(shutdown_message)
+                    # Give client a moment to process the message
+                    await asyncio.sleep(0.1)
+                    await ws.close(code=1001, reason=reason)
+                    logger.debug("Gracefully closed WebSocket connection")
+            except Exception as e:
+                logger.debug(f"Error during graceful WebSocket close: {e}")
+
+        # Close all connections concurrently with a timeout
+        close_tasks = [notify_and_close(ws) for ws in self._active_connections]
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*close_tasks, return_exceptions=True),
+                timeout=5.0  # 5 second timeout for graceful shutdown
+            )
+        except TimeoutError:
+            logger.warning("Graceful shutdown timed out, forcing connection closure")
+
+        # Clear the connections list
+        self._active_connections.clear()
+        logger.info("All WebSocket connections closed")
 
 
 # Singleton instance for application-wide use

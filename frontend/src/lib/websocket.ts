@@ -3,7 +3,13 @@
  * Handles connection management, reconnection logic, and message parsing.
  */
 
-export type WebSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
+export type WebSocketStatus = 'connecting' | 'connected' | 'disconnected' | 'error' | 'reconnecting';
+
+export interface ReconnectionState {
+  isReconnecting: boolean;
+  attempt: number;
+  maxAttempts: number;
+}
 
 export interface ScanPoint {
   index: number;
@@ -40,18 +46,27 @@ export interface ScanStoppedMessage {
   type: 'scan_stopped';
 }
 
+export interface ServerShutdownMessage {
+  type: 'server_shutdown';
+  reason: string;
+}
+
 export type ScanMessage =
   | ScanStartedMessage
   | ScanPointMessage
   | ScanCompletedMessage
   | ScanErrorMessage
-  | ScanStoppedMessage;
+  | ScanStoppedMessage
+  | ServerShutdownMessage;
 
 export interface WebSocketCallbacks {
   onOpen?: () => void;
   onClose?: () => void;
   onError?: (error: Event) => void;
   onMessage?: (message: ScanMessage) => void;
+  onReconnecting?: (state: ReconnectionState) => void;
+  onReconnectFailed?: () => void;
+  onServerShutdown?: (reason: string) => void;
 }
 
 const DEFAULT_WS_URL = 'ws://localhost:8000/ws/scan';
@@ -65,10 +80,20 @@ export class ScanWebSocket {
   private reconnectAttempts = 0;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private shouldReconnect = true;
+  private _isReconnecting = false;
+  private readonly maxReconnectAttempts = MAX_RECONNECT_ATTEMPTS;
 
   constructor(url: string = DEFAULT_WS_URL, callbacks: WebSocketCallbacks = {}) {
     this.url = url;
     this.callbacks = callbacks;
+  }
+
+  getReconnectionState(): ReconnectionState {
+    return {
+      isReconnecting: this._isReconnecting,
+      attempt: this.reconnectAttempts,
+      maxAttempts: this.maxReconnectAttempts,
+    };
   }
 
   connect(): void {
@@ -81,6 +106,7 @@ export class ScanWebSocket {
 
     this.ws.onopen = () => {
       this.reconnectAttempts = 0;
+      this._isReconnecting = false;
       this.callbacks.onOpen?.();
     };
 
@@ -96,6 +122,14 @@ export class ScanWebSocket {
     this.ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data) as ScanMessage;
+
+        // Handle server shutdown: disable reconnection and notify callback
+        if (message.type === 'server_shutdown') {
+          this.shouldReconnect = false;
+          this._isReconnecting = false;
+          this.callbacks.onServerShutdown?.(message.reason);
+        }
+
         this.callbacks.onMessage?.(message);
       } catch (e) {
         console.error('Failed to parse WebSocket message:', e);
@@ -105,6 +139,7 @@ export class ScanWebSocket {
 
   disconnect(): void {
     this.shouldReconnect = false;
+    this._isReconnecting = false;
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
@@ -151,11 +186,23 @@ export class ScanWebSocket {
   }
 
   private attemptReconnect(): void {
-    if (!this.shouldReconnect || this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    if (!this.shouldReconnect) {
+      this._isReconnecting = false;
       return;
     }
 
+    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      this._isReconnecting = false;
+      this.callbacks.onReconnectFailed?.();
+      return;
+    }
+
+    this._isReconnecting = true;
     this.reconnectAttempts++;
+
+    // Notify about reconnection attempt
+    this.callbacks.onReconnecting?.(this.getReconnectionState());
+
     this.reconnectTimeout = setTimeout(() => {
       this.connect();
     }, RECONNECT_DELAY_MS);
