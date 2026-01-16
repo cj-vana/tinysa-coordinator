@@ -164,7 +164,7 @@ export class ScanWebSocket {
     points: number;
     rbw_khz?: number;
   }): void {
-    this.send({ action: 'start_scan', ...params });
+    this.send({ action: 'start_scan', config: params });
   }
 
   stopScan(): void {
