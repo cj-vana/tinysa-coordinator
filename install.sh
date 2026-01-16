@@ -133,6 +133,36 @@ EOF
 }
 
 # ============================================================================
+# Path Utilities
+# ============================================================================
+
+expand_tilde() {
+    # Expand tilde to home directory for user-specified paths
+    # Bash doesn't expand ~ when it's inside a quoted variable
+    local path="$1"
+    case "$path" in
+        "~")
+            echo "$HOME"
+            ;;
+        "~/"*)
+            echo "${HOME}${path:1}"
+            ;;
+        "~+"*)
+            # ~+ expands to current working directory
+            echo "${PWD}${path:2}"
+            ;;
+        "~-"*)
+            # ~- expands to previous working directory
+            echo "${OLDPWD}${path:2}"
+            ;;
+        *)
+            # Return path as-is for non-tilde paths
+            echo "$path"
+            ;;
+    esac
+}
+
+# ============================================================================
 # Argument Parsing
 # ============================================================================
 
@@ -152,7 +182,8 @@ parse_args() {
                 ;;
             --dir)
                 if [[ -n "$2" && ! "$2" =~ ^-- ]]; then
-                    INSTALL_DIR="$2"
+                    # Apply tilde expansion for user-specified paths
+                    INSTALL_DIR="$(expand_tilde "$2")"
                     shift 2
                 else
                     error "--dir requires a directory name"
@@ -389,6 +420,8 @@ clone_repo() {
             info "Project already exists in $INSTALL_DIR"
             info "Pulling latest changes..."
             cd "$INSTALL_DIR"
+            # Update INSTALL_DIR to absolute path for consistent messaging
+            INSTALL_DIR="$(pwd)"
             git pull origin "$BRANCH" || warn "Could not pull latest changes"
             return 0
         else
@@ -398,9 +431,19 @@ clone_repo() {
         fi
     fi
 
+    # Create parent directories if needed (for paths like ~/projects/scanner)
+    local parent_dir
+    parent_dir="$(dirname "$INSTALL_DIR")"
+    if [ "$parent_dir" != "." ] && [ ! -d "$parent_dir" ]; then
+        info "Creating parent directory: $parent_dir"
+        mkdir -p "$parent_dir"
+    fi
+
     info "Cloning repository from branch: $BRANCH"
     git clone --branch "$BRANCH" --single-branch "$REPO_URL" "$INSTALL_DIR"
     cd "$INSTALL_DIR"
+    # Update INSTALL_DIR to absolute path for consistent messaging
+    INSTALL_DIR="$(pwd)"
     success "Repository cloned to $INSTALL_DIR"
 }
 
